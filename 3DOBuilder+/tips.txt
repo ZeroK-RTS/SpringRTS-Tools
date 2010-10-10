@@ -1,0 +1,20 @@
+If you are importing Lightwave (LWO) objects, be sure to set an import scale constant (Objects menu) of around 20-50.
+If you are having trouble getting 3DO Builder to load the TA textures on startup, try manually setting your TA Location (Special menu).
+The invert faces options in the Faces menu are useful when your model appears "inside out" in TA or the unit viewer.
+You can test the COB script for your unit in the unit viewer using the custom export to unit viewer option in the File menu.
+If 3DO Builder crashes when loading your model, try disabling the OpenGL view in the Display Options (View menu).
+You can import custom textures to use on your models.  Use the Import Textures dialog (File menu), and select your 256-color BMP file textures.
+3DO Builder includes an enhanced Total Annihilation Unit Viewer.  Press F5 to instantly view your model with full textures as they will be seen in TA.
+To refresh your model in the 3D view, press F6, or see the OpenGL View options in the View menu.
+When importing pieces for a model, always import them around the origin, and then move into position with the Move Object tool on the toolbar.
+If the ground plate (selection rectangle in TA) for your unit does not appear as a dotted line in 3DO Builder, select the face, and choose "Set Face as Unit Ground Plate" from the Special menu.
+To create a ground plate for your unit, select Add Unit Ground Plate from the Special menu.
+You can instantly create reference points for your model.  Reference points are used in the COB scripts as points for lasers or steam.  Create a new object (Objects menu).  You now have a single default reference point which you can move anywhere on your model with the Move tool.
+Create a unit picture for your unit very quickly with the Unit Picture dialog (Special menu).
+If your model is not displaying properlly, deselect "Auto-Center View" from the View menu.
+You can instantly apply a texture/color to multiple faces on your object at once using the "Apply" button in the toolbox on the left.
+Change the size of the ground plate on your model "Change Ground Plate Size" in the Special menu.
+Go through the tutorial (tutorial.doc) in the 3DO Builder folder for a quick run-through of basic features in 3DO Builder.
+You can customize all the colors in the views.  See the Display Options (View menu).
+3DO Builder was written for free.  So if you have problems.... Damn.  :P
+You can change the position of an object on the tree.  Click on the object you want to move, then right click on the object you want to move it under.

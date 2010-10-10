@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="system">
+    <system systemId="http://planet-wars.eu/MissionEditorServer/EditorService.asmx?WSDL" uri="xml-resources/web-service-references/EditorService/wsdl/planet-wars.eu/MissionEditorServer/EditorService.asmx.wsdl"/>
+</catalog>

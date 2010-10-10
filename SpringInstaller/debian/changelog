@@ -1,0 +1,35 @@
+spring-installer (20090119-0ubuntu1~8.10~ppa1) intrepid; urgency=low
+
+  * New upstream release
+
+ -- Chris Clearwater <chris@detrino.org>  Mon, 19 Jan 2009 09:40:46 -0800
+
+spring-installer (20090115-0ubuntu1~8.10~ppa1) intrepid; urgency=low
+
+  * New upstream release
+
+ -- Chris Clearwater <chris@detrino.org>  Thu, 15 Jan 2009 04:09:18 -0800
+
+spring-installer (20081228-0ubuntu1~ppa1) intrepid; urgency=low
+
+  * New upstream release
+
+ -- Chris Clearwater <chris@detrino.org>  Sat, 27 Dec 2008 17:38:45 -0800
+
+spring-installer (20081012-0ubuntu2~ppa1~intrepid) intrepid; urgency=low
+
+  * Bump for intrepid
+
+ -- Chris Clearwater <chris@detrino.org>  Sun, 12 Oct 2008 01:40:58 -0700
+
+spring-installer (20081004-0ubuntu1) hardy; urgency=low
+
+  * New upsteam release
+
+ -- Chris Clearwater <chris@detrino.org>  Sat, 04 Oct 2008 00:54:25 -0700
+
+spring-installer (20080917-0ubuntu1) hardy; urgency=low
+
+  * Initial release
+
+ -- Chris Clearwater <chris@detrino.org>  Wed, 17 Sep 2008 11:05:05 -0700

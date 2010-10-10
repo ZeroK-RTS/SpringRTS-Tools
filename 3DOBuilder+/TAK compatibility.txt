@@ -1,0 +1,54 @@
+As of version beta 4, 3DO Builder+ has had support for TA:Kingdoms;
+however it doesn't yet support TA:K .hpi file formats.  Therefore
+in order to use it you must duplicate the textures in a TA file 
+format by following these directions:
+
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+THE (somewhat) EASIER WAY
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+
+1)  Create a new folder on your desktop named "TA:K Textures" 
+    (without the quotes)
+
+2)  Open the TA:K data file "data.hpi" with HPI View (you'll need 
+    version 1.9 or later)
+
+3)  Use "Extract All" to extract all the data from "data.hpi" into
+    the "TA:K Textures" directory you created on the desktop
+
+4)  Delete or move all the folders except the "textures" folder 
+    from the "TA:K Textures" folder
+
+5)  Use HPI Pack to pack the "TA:K Textures" folder into the file
+    "TAKtextures.hpi" using any of the TA compatible formats, and
+    store the file in the same directory as 3do Builder+
+
+6)  Start up 3do Builder+ and manualy set the TA:Kingdoms location
+    To be the 3do Builder folder (using the View:Set Custom TA:K 
+    Location... menu option)
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+THE SMALLER WAY
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+
+1)  Create a new folder on your desktop named "TA:K Textures" 
+    (without the quotes)
+
+2)  Create a second folder inside the first named "textures"
+
+3)  Open the TA:K data file "data.hpi" with HPI View (you'll need 
+    version 1.9 or later)
+
+4)  Extract all the .gaf files from the textures folder into the
+    "TA:K Textures\textures" directory you created on the desktop
+
+5)  Use HPI Pack to pack the "TA:K Textures" folder into the file
+    "TAKtextures.hpi" using any of the TA compatible formats, and
+    store the file in the same directory as 3do Builder+
+
+6)  Start up 3do Builder+ and manualy set the TA:Kingdoms location
+    To be the 3do Builder folder (using the View:Set Custom TA:K 
+    Location... menu option)
