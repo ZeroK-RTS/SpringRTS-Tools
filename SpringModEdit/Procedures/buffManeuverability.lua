@@ -42,7 +42,7 @@ for id,unit in pairs(Units) do
 			local diff = baseTurn - unit.turnRate
 			local newVal = math.ceil(unit.turnRate + diff*turnFactor)
 			local echoFront = unit.unitname
-			Editor.Echo(unit.name.."\t"..unit.turnRate.."\t"..newVal.."\n")
+			--Editor.Echo(unit.name.."\t"..unit.turnRate.."\t"..newVal.."\n")
 			--SetTableValue(unit, "turnRate", newVal, doPreviewOnly, echoFront, echoColor)
 		end
 	end
