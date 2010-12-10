@@ -11,7 +11,7 @@ function StandardSensors(doPreviewOnly)
   local signatureCloak = 16
   local signatureFloater = 4
   local signatureDefault = 4
-  
+  local minSightDistanceRange = 1.1
   local minRadarDistance = 100 --units with less than this radar distance get their radar distance removed
   
   local ignore = {
@@ -43,6 +43,14 @@ function StandardSensors(doPreviewOnly)
       else
         unitModified = SetTableValue(unit, "seismicSignature", signatureDefault, doPreviewOnly, echoFront, "Green") or unitModified
       end
+	  
+	  if (unit.sightDistance) then 
+		local range = GetUnitRange(unit) 
+		if (range > 600) then range = 600 end 
+		if (unit.sightDistance < range * minSightDistanceRange) then 
+			unitModified = SetTableValue(unit, "sightDistance", range*minSightDistanceRange, doPreviewOnly, echoFront, "Green") or unitModified
+		end 
+	  end
       
       if (unitModified) then
          Editor.Echo("--------------------------------\n", "Black")
