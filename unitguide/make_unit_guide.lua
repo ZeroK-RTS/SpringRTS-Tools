@@ -41,7 +41,12 @@ armfacs = {
 	'factoryveh',
 	'factorytank',
 	'factoryhover',
+		
+	'factoryplane',
+	'factorygunship',
+	'corsy',
 	'armcsa',
+
 }
 
 chickenfacs = {
@@ -51,7 +56,7 @@ chickenfacs = {
 armdefenses =
 {
 	'corllt',
-	'corrl',
+	'corhlt',
 	'corgrav',
 	'armdeva',
 	'armartic',
@@ -110,8 +115,24 @@ end
 function lowerkeys()
 end
 
+local html = ''
+local toc = ''
+toc = toc .. '<a name="toc"></a>'
+toc = toc .. '<b><a href="#factories">Factories</a></b> <blockquote>'
 local function writeml(ml)
-	f:write(ml)
+	for word in ml:gmatch('<a name="(fac%-[^"]*)"') do 
+		toc = toc .. '<br /><a href="#'..word..'">'
+			..word:gsub('fac%-', '')
+			..'</a> ' 
+	end
+	for word in ml:gmatch('<a name="(unit%-[^"]*)">') do 
+		toc = toc .. ' - <a href="#'..word..'" style="font-size:x-small">'
+			..word:gsub('unit%-', '')
+			..'</a> ' 
+	end
+	
+	html = html .. ml
+	--f:write(ml)
 end
 
 function openfile(filename)
@@ -139,7 +160,8 @@ function trac_html (html)
 end
 
 function buildPic(buildPicName)
-	return '<img src="http://zero-k.info/img/unitpics/'.. string.lower(buildPicName) ..'" width="85" height="64" title="'.. buildPicName  ..'">'
+	return '<img src="http://zero-k.info/img/unitpics/'.. string.lower(buildPicName) ..'" width="85" height="64" title="'.. buildPicName  ..'" class="buildpic" >'
+		
 end
 
 function getDescription(unitDef, forcelang)
@@ -151,6 +173,7 @@ function getDescription(unitDef, forcelang)
 		return unitDef.customParams and unitDef.customParams['description_' .. lang_to_use] or ''
 	end
 end	
+
 function getHelpText(unitDef, forcelang)
 	--local lang_to_use = forcelang
 	--if not forcelang then
@@ -168,9 +191,10 @@ function tableRow (name, value, style)
 			'<td align="left"> '.. value .. '</td>'..nl..
 		'</tr>' ..nl
 end
+
 function tableHeader (header, style)
 	return 	'<tr '.. (style or '') ..'>' ..nl..
-			'<th align="center" colspan="2"><b> '.. header ..' </b></th>' ..nl..
+			'<th align="center" colspan="2" valign="top">'.. header ..'</th>' ..nl..
 		'</tr>' ..nl
 end
 
@@ -281,16 +305,16 @@ function printWeapons(unitDef)
 					dam_str = dam_str .. ' || '
 				end
 				dam_str = '<span class="paralyze">' .. dam_str .. comma_value(ws.damw) .. ' (P)</span>'
-				dps_str = '<span class="paralyze">' dps_str .. comma_value(ws.dpsw) .. ' (P)</span>'
+				dps_str = '<span class="paralyze">' .. dps_str .. comma_value(ws.dpsw) .. ' (P)</span>'
 			end
 			
 			cells = cells .. 
 				'<td align="right" valign="top">' ..nl..
-					'<table spacing="0" border="1" padding="11" class="wiki">' ..nl..		
-						tableHeader(ws.wname) .. 
-						tableRow('Damage', dam_str, 'style="font-weight:bold;white-space:nowrap"')..
+					'<table cellspacing="0" border="1" cellpadding="2" class="statstable">' ..nl..		
+						tableHeader('<img src="http://zero-k.info/img/luaui/commands/Bold/attack.png" width="20" alt="Weapon" title="Weapon" style="vertical-align:top;" />' .. ws.wname ) .. 
+						tableRow('Damage', dam_str, 'style="white-space:nowrap"')..
 						tableRow('Reloadtime', ws.reloadtime, 'style="white-space:nowrap"')..
-						tableRow('Damage/second', dps_str, 'style="font-weight:bold;white-space:nowrap"')..
+						tableRow('Damage/second', dps_str, 'style="white-space:nowrap"')..
 						tableRow('Range', ws.range) ..
 					'</table>' ..nl..
 				'</td>' ..nl
@@ -335,7 +359,13 @@ function printUnit(unitname, mobile_only)
 	--]]
 	
 	local description = getDescription(unitDef)
-	writeml('<a name="unit-' .. unitDef.name .. '"></a> <span class="unitname">'.. unitDef.name .. '</span> - <span class="unitdesc">'.. description .. '</span>' .. nl)
+	writeml(
+		'<a name="unit-' .. unitDef.name .. '"></a> <a href="#unit-' .. unitDef.name .. '" class="unitname">'
+		.. unitDef.name .. '</a> - <span class="unitdesc">'.. description .. '</a> &nbsp;&nbsp;&nbsp;&nbsp;' 
+		.. nl
+		..'<a href="#toc"> [ ^ ] </a>'
+		.. nl
+		)
 
 	local cost = unitDef.buildCostMetal > 0 and unitDef.buildCostMetal or unitDef.buildTime
 
@@ -346,7 +376,7 @@ function printUnit(unitname, mobile_only)
 			buildPic(unitDef.buildPic or unitDef.unitname .. '.png') ..nl..
 		'</td>' ..nl..
 		'<td align="right" valign="top" width="100%">' ..nl..
-			'<table spacing="0" border="1" padding="11" class="wiki">' ..nl..
+			'<table cellspacing="0" border="1" cellpadding="2" class="statstable">' ..nl..
 				tableRow('<img src="http://zero-k.info/img/luaui/ibeam.png" width="20" alt="Cost" title="Cost" />', comma_value(cost)) ..
 				tableRow('<img src="http://zero-k.info/img/luaui/commands/Bold/health.png" width="20" alt="Health Points" title="Health Points" />', comma_value(unitDef.maxDamage)) ..
 				(unitDef.maxVelocity and (unitDef.maxVelocity+0) > 0 and tableRow('<img src="http://zero-k.info/img/luaui/draggrip.png" width="20" alt="Speed" title="Speed" />', unitDef.maxVelocity) or '') ..
@@ -389,7 +419,7 @@ function printFac(facname)
 	curFacDef = unitDef
 
         if lang == 'all' then
-                writeml("<h3> Factory: " .. facname .. ' </h3>' ..nlnl)
+                writeml('<h3> Factory: ' .. facname .. ' </h3>' ..nlnl)
                 for _, curlang in ipairs(langNames) do
                         writeml('[[Image(source:/trunk/mods/ca/LuaUI/Images/flags/'.. flags[curlang]  ..'.png)]] ')
                         writeml("<b>Language:</b> " .. curlang .. nlnl)
@@ -400,7 +430,7 @@ function printFac(facname)
         else
 
 
-		writeml('<h3> '.. curFacDef.name ..' </h3>' ..nlnl)
+		writeml('<a name="fac-'.. curFacDef.name ..'"></a><h3><a href="#fac-'.. curFacDef.name ..'">'.. curFacDef.name ..'</a></h3>' ..nlnl)
 		writeml("<b>".. getDescription(curFacDef)  .."</b>" ..nlnl .. brbr)	
 		trac_html(
 			buildPic(curFacDef.buildPic) ..nl
@@ -424,20 +454,25 @@ function printFaction(name, image, description, faclist, dlist, somecon)
 
 	--writeml('<hr />' ..nlnl)
 	local printedunitlistkeys = {}
+	writeml('<a name="factories"></a><h3> Factories </h3> ' ..nlnl)
 	for _, fac in pairs(faclist) do
 		printFac(fac)
 		printedunitlistkeys[fac] = true
 	end
-	writeml('<h3> Static Weapons </h3> ' ..nlnl)
+	toc = toc .. '</blockquote>'
+	toc = toc .. '<b><a href="#staticweapons">Static Weapons</a></b>'
+
+	writeml('<a name="staticweapons"></a><h3> Static Weapons </h3> ' ..nlnl)
 	for _, d in pairs(dlist) do
 		printUnit(d)
 		printedunitlistkeys[d] = true
 	end
-	
+	toc = toc .. '<br /><br /><b><a href="#otherstructures">Other Structures</a></b>'
+
 	if somecon then
 		local slist = {}
 		openfile(somecon)
-		writeml('<h3> Other Structures </h3> ' ..nlnl)
+		writeml('<a name="otherstructures"></a><h3> Other Structures </h3> ' ..nlnl)
 		for _,unitname in pairs(unitDef.buildoptions) do
 			if not printedunitlistkeys[unitname] then
 				printUnit(unitname)
@@ -526,7 +561,8 @@ printFaction('Nova (formerly ARM)',
 			armfacs, armdefenses, 'armcom')
 
 			
-writeml('<hr />' .. nlnl)
-writeml('([wiki:Manual Back to the Manual])')
 
+toc = toc .. '<br /><br />'
+f:write(toc)
+f:write(html)
 io.close(f)
