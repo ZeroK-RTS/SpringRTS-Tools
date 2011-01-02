@@ -232,11 +232,13 @@ function printWeapons(unitDef)
 	local merw = {}
 
 	local wd = unitDef.weapondefs
-	if not wd then return '' end	
+	if not wd then return '' end
+
 	for i, weaponDef in pairs(unitDef.weapons) do
-		local weaponName = weaponDef.def
+		local weaponName = string.lower( weaponDef.def )
+		
 		if (wd[weaponName] and wd[weaponName].damage) then
-			
+		
 			local wsTemp = {}
 			wsTemp.slaveTo = weaponDef.slaveto --fixme - lowercase?
 			if wsTemp.slaveTo then
@@ -334,7 +336,8 @@ function printWeapons(unitDef)
 				dam_str = '<span class="paralyze">' .. dam_str .. comma_value(ws.damw) .. ' (P)</span>'
 				dps_str = '<span class="paralyze">' .. dps_str .. comma_value(ws.dpsw) .. ' (P)</span>'
 			end
-			if not ws.wname:find('Fake') or ws.wname:find('fake') then
+			
+			if not (ws.wname:find('Fake') or ws.wname:find('fake') ) then
 				cells = cells .. 
 					'<td align="right" valign="top">' ..nl..
 						'<table cellspacing="0" border="1" cellpadding="2" class="statstable">' ..nl..		
