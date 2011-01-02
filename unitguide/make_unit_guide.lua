@@ -25,8 +25,7 @@ local function to_string(data, indent)
                 str = str .. (indenter):rep(indent) .. i .. ":\n"
                 str = str .. to_string(v, indent + 2)
             else
-                str = str .. (indenter):rep(indent) .. i .. ": " ..
-to_string(v, 0)
+                str = str .. (indenter):rep(indent) .. i .. ": " .. to_string(v, 0)
             end
         end
 	elseif(type(data) == "function") then
@@ -203,7 +202,7 @@ end
 function tableRow (name, value, style)
 	return 	'<tr '.. (style or '') ..'>' ..nl..
 			'<td align="right"> '.. name ..' </td>' ..nl..
-			'<td align="left"> '.. value .. '</td>'..nl..
+			'<td align="left" class="statsnumval"> '.. value .. '</td>'..nl..
 		'</tr>' ..nl
 end
 
@@ -328,10 +327,10 @@ function printWeapons(unitDef)
 					'<td align="right" valign="top">' ..nl..
 						'<table cellspacing="0" border="1" cellpadding="2" class="statstable">' ..nl..		
 							tableHeader('<img src="http://zero-k.info/img/luaui/commands/Bold/attack.png" width="20" alt="Weapon" title="Weapon" style="vertical-align:top;" />' .. ws.wname ) .. 
-							tableRow('Damage', dam_str, 'style="white-space:nowrap"')..
-							tableRow('Reloadtime', ws.reloadtime, 'style="white-space:nowrap"')..
-							tableRow('Damage/second', dps_str, 'style="white-space:nowrap"')..
-							tableRow('Range', ws.range) ..
+							tableRow('Damage', dam_str, 'class="statsfield"')..
+							tableRow('Reloadtime', ws.reloadtime, 'class="statsfield"')..
+							tableRow('Damage/second', dps_str, 'class="statsfield"')..
+							tableRow('Range', comma_value(ws.range) ) ..
 						'</table>' ..nl..
 					'</td>' ..nl
 			end
@@ -385,9 +384,9 @@ function printUnit(unitname, mobile_only)
 	--]]
 	
 	local description = getDescription(unitDef)
-	writeml(
-		'<a name="unit-' .. unitDef.name .. '"></a> <a href="#unit-' .. unitDef.name .. '" class="unitname">'
-		.. unitDef.name .. '</a> - <span class="unitdesc">'.. description .. '</a> &nbsp;&nbsp;&nbsp;&nbsp;' 
+	writeml(''
+		..'<a name="unit-' .. unitDef.name .. '"></a> <a href="#unit-' .. unitDef.name .. '" class="unitname">'
+		.. unitDef.name .. '</a> - <span class="unitdesc">'.. description .. '</span></a> &nbsp;&nbsp;&nbsp;&nbsp;' 
 		.. nl
 		..'<a href="#toc"> [ ^ ] </a>'
 		.. nl
@@ -396,21 +395,21 @@ function printUnit(unitname, mobile_only)
 	local cost = unitDef.buildcostmetal and (unitDef.buildcostmetal > 0) and unitDef.buildcostmetal or unitDef.buildtime or unitDef.buildcostenergy
 
 	trac_html(
-		'<table border="0" width="100%">' ..nl..
-		'<tr>' ..nl..
-		'<td align="left">' ..nl..
-			buildPic(unitDef.buildpic or unitDef.unitname .. '.png') ..nl..
-		'</td>' ..nl..
-		'<td align="right" valign="top" width="100%">' ..nl..
-			'<table cellspacing="0" border="1" cellpadding="2" class="statstable">' ..nl..
-				tableRow('<img src="http://zero-k.info/img/luaui/ibeam.png" width="20" alt="Cost" title="Cost" />', comma_value(cost)) ..
-				tableRow('<img src="http://zero-k.info/img/luaui/commands/Bold/health.png" width="20" alt="Health Points" title="Health Points" />', comma_value(unitDef.maxdamage)) ..
-				(unitDef.maxvelocity and (unitDef.maxvelocity+0) > 0 and tableRow('<img src="http://zero-k.info/img/luaui/draggrip.png" width="20" alt="Speed" title="Speed" />', unitDef.maxvelocity) or '') ..
-			'</table>' ..nl..
-		'</td>' ..nl..
-		weaponStats ..
-		'</tr>' ..nl..
-		'</table>'.. nl
+		'<table border="0" width="100%">' ..nl
+		..'<tr>' ..nl
+			..'<td align="left" valign="top">' ..nl
+				..buildPic(unitDef.buildpic or unitDef.unitname .. '.png') ..nl
+			..'</td>' ..nl
+			..'<td align="right" valign="top" width="100%">' ..nl
+				..'<table cellspacing="0" border="1" cellpadding="2" class="statstable">' ..nl
+					..tableRow('<img src="http://zero-k.info/img/luaui/ibeam.png" width="20" alt="Cost" title="Cost" />', comma_value(cost)) 
+					..tableRow('<img src="http://zero-k.info/img/luaui/commands/Bold/health.png" width="20" alt="Health Points" title="Health Points" />', comma_value(unitDef.maxdamage)) 
+					..(unitDef.maxvelocity and (unitDef.maxvelocity+0) > 0 and tableRow('<img src="http://zero-k.info/img/luaui/draggrip.png" width="20" alt="Speed" title="Speed" />', unitDef.maxvelocity) or '') 
+				..'</table>' ..nl
+			..'</td>' ..nl
+			..weaponStats 
+		..'</tr>' ..nl
+		..'</table>'.. nl
 	)
 
 	writeml('<span class="helptext"> '.. getHelpText(unitDef) .. '</span>' .. nlnl .. brbr)
@@ -464,7 +463,7 @@ function printFac(facname)
 		)
 	
 		
-		writeml(brbr .. getHelpText(curFacDef) .. nlnl)
+		writeml(brbr .. '<span class="helptext">' .. getHelpText(curFacDef) .. '</span>' .. nlnl)
 		writeml('<hr />' ..nlnl)
 	end
 
