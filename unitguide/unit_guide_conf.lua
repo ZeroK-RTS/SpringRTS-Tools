@@ -23,6 +23,7 @@ facs.one = {
 	'factorygunship',
 	'corsy',
 	'armcsa',
+	'missilesilo',
 }
 staticw.one =
 {
@@ -42,7 +43,6 @@ staticw.one =
 	'cortl',
 	
 	'corsilo',
-	'missilesilo',
 	'armanni',
 	'cordoom',
 	'corbhmth',
@@ -82,7 +82,6 @@ local faction_descriptions = {
 	all = { 
 	}
 }
-
 
 local faction_data = {
 	faction_names = faction_names,

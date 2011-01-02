@@ -366,7 +366,7 @@ function printUnit(unitname, mobile_only)
 	end
 	
 	if mobile_only and (not unitDef.maxvelocity or (unitDef.maxvelocity+0) < 0.1) then
-		return
+		--return --show missiles in missile silo
 	end
 
 	if lang == 'all' then
@@ -379,7 +379,11 @@ function printUnit(unitname, mobile_only)
 		end
 		writeml('<hr />' .. br.. nlnl)
 		return
+	elseif lang == 'featured' then
+		writeml(unitname .. '\t' .. unitDef.name .. '\t' .. getDescription(unitDef, 'en') .. '\t' .. getHelpText(unitDef, 'en') .. '\n' )
+		return
 	end
+	
 	writeml('<blockquote>')
 	
 	local weaponStats = ''
@@ -435,7 +439,7 @@ function printUnit(unitname, mobile_only)
 			for k,v in ipairs(morphs) do
 				local unitDef = unitDefs[v.into]
 				local cost = ' (' .. (v.rank and v.rank ~= 0 and (v.rank .. ' Rank, ') or '') .. (v.time or '0') .. 's)'
-				morphstr = morphstr .. '<a href=#unit-' .. unitDef.name .. '>' .. unitDef.name .. '</a>' ..  cost .. ', '
+				morphstr = morphstr .. '<a href="#unit-' .. unitDef.name .. '">' .. unitDef.name .. '</a>' ..  cost .. ', '
 			end
 		end
 		morphstr = morphstr .. '</span>'
@@ -454,15 +458,17 @@ function printFac(facname)
 	curFacDef = unitDefs[facname]
 
 	if lang == 'all' then
-			writeml('<h3> Factory: ' .. facname .. ' </h3>' ..nlnl)
-			for _, curlang in ipairs(langNames) do
-					writeml('<img src="http://zero-k.info/img/luaui/flags/'.. flags[curlang]  ..'.png"> ')
-					writeml("<b>Language:</b> " .. curlang .. br.. nl)
-					writeml("<b>Description</b>" .. br.. nl.. '>> ' .. (getDescription(curFacDef, curlang) or '') .. br..nl)
-					writeml("<b>Helptext</b> " ..br..nl.. '>> ' .. (getHelpText(curFacDef, curlang) or '') .. brbr.. nlnl)
-			end
-			writeml('<hr />' .. br.. nlnl)
-			writeml('<blockquote>'.. nlnl)
+		writeml('<h3> Factory: ' .. facname .. ' </h3>' ..nlnl)
+		for _, curlang in ipairs(langNames) do
+				writeml('<img src="http://zero-k.info/img/luaui/flags/'.. flags[curlang]  ..'.png"> ')
+				writeml("<b>Language:</b> " .. curlang .. br.. nl)
+				writeml("<b>Description</b>" .. br.. nl.. '>> ' .. (getDescription(curFacDef, curlang) or '') .. br..nl)
+				writeml("<b>Helptext</b> " ..br..nl.. '>> ' .. (getHelpText(curFacDef, curlang) or '') .. brbr.. nlnl)
+		end
+		writeml('<hr />' .. br.. nlnl)
+		writeml('<blockquote>'.. nlnl)
+	elseif lang == 'featured' then
+		writeml(facname .. '\t' .. curFacDef.name .. '\t' .. getDescription(curFacDef, 'en') .. '\t' .. getHelpText(curFacDef, 'en') .. '\n' )
 	else
 
 
@@ -500,7 +506,9 @@ function printFaction(intname, image)
 
 	
 	local printedunitlistkeys = {}
-	writeml('<a name="factories"></a><h3> Factories </h3> ' ..nlnl)
+	if lang ~= 'featured' then
+		writeml('<a name="factories"></a><h3> Factories </h3> ' ..nlnl)
+	end
 	for _, fac in pairs(faclist) do
 		printFac(fac)
 		printedunitlistkeys[fac] = true
@@ -508,7 +516,9 @@ function printFaction(intname, image)
 	toc = toc .. '</blockquote>'
 	toc = toc .. '<b><a href="#staticweapons">Static Weapons</a></b>'
 
-	writeml('<a name="staticweapons"></a><h3> Static Weapons </h3> ' ..nlnl)
+	if lang ~= 'featured' then
+		writeml('<a name="staticweapons"></a><h3> Static Weapons </h3> ' ..nlnl)
+	end
 	for _, d in pairs(dlist) do
 		printUnit(d)
 		printedunitlistkeys[d] = true
@@ -519,7 +529,9 @@ function printFaction(intname, image)
 		local slist = {}
 		local unitDef = unitDefs[somecon]
 		if not unitDef then return false; end
-		writeml('<a name="otherstructures"></a><h3> Other Structures </h3> ' ..nlnl)
+		if lang ~= 'featured' then
+			writeml('<a name="otherstructures"></a><h3> Other Structures </h3> ' ..nlnl)
+		end
 		for _,unitname in pairs(unitDef.buildoptions) do
 			if not printedunitlistkeys[unitname] then
 				printUnit(unitname)
@@ -528,27 +540,23 @@ function printFaction(intname, image)
 	end
 end
 
-trac_html(
-	'<style type="text/css">' ..nl..
-	'tr.blue { border-color: #00DD00 }' ..nl..
-	'</style>' ..nl
-)
 
-
+--[[
 if false and lang ~= 'all' then
 	local roles_file = '/home/ca/bin/manual/roles.txt'
 	if lang ~= 'en' then
 		roles_file = '/home/ca/bin/manual/roles_'.. lang ..'.txt'
 	end
-	--[[
+	--[=[
 	for line in io.lines(roles_file) do 
 		writeml(line)
 	end
-	--]]
+	--]=]
 	fhroles = io.open(roles_file, "rb")
 	writeml(fhroles:read("*all"))
 	fhroles:close()
 end
+--]]
 
 for faction, con in pairs(faction_data.cons) do
 	printFaction( faction, '', cons )
@@ -557,6 +565,8 @@ end
 			
 
 toc = toc .. brbr
-f:write(toc)
+if lang ~= 'featured' then
+	f:write(toc)
+end
 f:write(html)
 io.close(f)
