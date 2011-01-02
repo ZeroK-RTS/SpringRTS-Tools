@@ -256,6 +256,13 @@ function printWeapons(unitDef)
 					else
 						wsTemp.dam = wsTemp.bestTypeDamage * wsTemp.burst * wsTemp.projectiles
 					end
+					
+					-- [[
+					if wd[weaponName].customparams and wd[weaponName].customparams.extra_damage then
+						wsTemp.dam = wd[weaponName].customparams.extra_damage * wsTemp.burst * wsTemp.projectiles
+					end
+					--]]
+					
 					wsTemp.reloadtime = wd[weaponName].reloadtime or ''
 					wsTemp.airWeapon = wd[weaponName].toAirWeapon or false
 					wsTemp.range = wd[weaponName].range or ''
@@ -265,6 +272,9 @@ function printWeapons(unitDef)
 					if  wsTemp.reloadtime ~= '' and wsTemp.reloadtime > 0 then
 						if wsTemp.paralyzer then
 							wsTemp.dpsw = math.floor(wsTemp.damw/wsTemp.reloadtime + 0.5)
+							if wd[weaponName].customparams and wd[weaponName].customparams.extra_damage then
+								wsTemp.dps = math.floor(wsTemp.dam/wsTemp.reloadtime + 0.5)
+							end
 						else
 							wsTemp.dps = math.floor(wsTemp.dam/wsTemp.reloadtime + 0.5)
 						end
@@ -315,8 +325,8 @@ function printWeapons(unitDef)
 			end
 			if ws.dpsw > 0 then
 				if dps_str ~= '' then
-					dps_str = dps_str .. ' || '
-					dam_str = dam_str .. ' || '
+					dps_str = dps_str .. ' + '
+					dam_str = dam_str .. ' + '
 				end
 				dam_str = '<span class="paralyze">' .. dam_str .. comma_value(ws.damw) .. ' (P)</span>'
 				dps_str = '<span class="paralyze">' .. dps_str .. comma_value(ws.dpsw) .. ' (P)</span>'
@@ -330,7 +340,7 @@ function printWeapons(unitDef)
 							tableRow('Damage', dam_str, 'class="statsfield"')..
 							tableRow('Reloadtime', ws.reloadtime, 'class="statsfield"')..
 							tableRow('Damage/second', dps_str, 'class="statsfield"')..
-							tableRow('Range', comma_value(ws.range) ) ..
+							tableRow('Range', comma_value(ws.range), 'class="statsfield"' ) ..
 						'</table>' ..nl..
 					'</td>' ..nl
 			end
@@ -350,8 +360,8 @@ function printUnit(unitname, mobile_only)
 	
 	if not unitDef.unitname then 
 		--return false; 
-		print(unitname, unitDef.unitname, unitDef.name)
-		print( to_string(unitDef) )
+		print("ERROR", unitname, unitDef.unitname, unitDef.name)
+		--print( to_string(unitDef) )
 		--return false;
 	end
 	
