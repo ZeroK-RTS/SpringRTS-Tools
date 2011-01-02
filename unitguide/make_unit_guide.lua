@@ -49,8 +49,6 @@ local brbr = "<br /><br />"
 
 local f = loadfile('./unit_guide_conf.lua')
 local faction_data = f()
-local ignoreweapon = faction_data.ignoreweapon
---local facs, staticw, faction_descriptions, ignoreweapon = f()
 
 local unitDefs = {}
 
@@ -148,16 +146,6 @@ function comma_value(amount)
 end
 
 f = io.open(output, 'w')
-
-for unitname,indeces in pairs(ignoreweapon) do
-	local newtable = {}
-
-	for _,index in ipairs(indeces) do
-		newtable[index]=true
-	end
-
-	ignoreweapon[unitname] = newtable
-end
 
 
 local html = ''
@@ -306,8 +294,6 @@ function printWeapons(unitDef)
 	local cells = ''
 
 	for index,ws in pairs(weaponList) do
-		if not (ignoreweapon[unitDef.unitname] and ignoreweapon[unitDef.unitname][index]) then
-
 		local mainweapon = merw and merw[index]
 		if not ws.slaveTo then
 			local dam = ws.finalDamage
@@ -351,7 +337,6 @@ function printWeapons(unitDef)
 			end
 		end
 
-		end
 	end
 	return cells
 end
