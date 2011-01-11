@@ -3,11 +3,16 @@ local doPreviewOnly = true
 
 for id,unit in pairs(Units) do 
   local mcd = unit.minCloakDistance or 0
-  local cost = unit.cloakCost or 0
-  if (cost ==0 and mcd == 0 and not (initCloaked or false)) then
-        local dist = 75
-	if (GetUnitIsStatic(unit)) then dist = 150 end
-	SetTableValue(unit, "minCloakDistance", dist , doPreviewOnly, id, "Black")
-  end
-end
+  local cloakCost = unit.cloakCost or 0
+  local buildCost = unit.buildCostMetal or 1
 
+  local fx = unit.footprintX and tonumber(unit.footprintX) or 1
+  local fz = unit.footprintZ and tonumber(unit.footprintZ) or 1
+  local radius = 8 * math.sqrt((fx * fx) + (fz * fz))
+  local dist = math.floor(radius + 58)
+  
+  --local dist = math.floor(buildCost^0.5)*2
+ 
+  if (GetUnitIsStatic(unit)) then dist = dist * 2.5 end
+  if (mcd == 75) or (mcd == 150) then SetTableValue(unit, "minCloakDistance", dist , doPreviewOnly, id, "Black")
+end
