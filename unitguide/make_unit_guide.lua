@@ -1,3 +1,6 @@
+local printStatics = {
+	missilesilo = true,
+}
 
 local function to_string(data, indent)
     local str = ""
@@ -366,7 +369,7 @@ function printUnit(unitname, mobile_only)
 	end
 	
 	if mobile_only and (not unitDef.maxvelocity or (unitDef.maxvelocity+0) < 0.1) then
-		--return --show missiles in missile silo
+		return
 	end
 
 	if lang == 'all' then
@@ -484,7 +487,8 @@ function printFac(facname)
 	end
 
 	for _,unitname in pairs(curFacDef.buildoptions) do
-		printUnit(unitname,true)
+		if printStatics[unitName] then printUnit(unitname,false)
+		else printUnit(unitname,true) end
 	end
 	
 	if lang == 'all' then
