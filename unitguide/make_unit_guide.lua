@@ -56,6 +56,8 @@ local unitDefs = {}
 
 Spring = { 
 	GetModOptions = function() end,
+	GetPlayerList = function() return {}; end,
+	GetModOptions = function() return 'asdf' end
 }
 
 function lowerkeys(t) --must be before openfile
@@ -124,7 +126,7 @@ for n,fileName in ipairs(fileList) do
 	end
 end
 
-local langNames = {'en', 'es', 'fr', 'bp', 'fi', 'pl', 'my', 'it'}
+local langNames = {'en', 'es', 'fr', 'bp', 'fi', 'pl', 'my', 'it', 'de',}
 local flags = {
 	en='us',
 	es='es',
@@ -134,6 +136,7 @@ local flags = {
 	fi='fi',
 	pl='pl',
 	my='my',
+	de='de',
 }
 
 function comma_value(amount)
@@ -169,10 +172,6 @@ local function writeml(ml)
 end
 
 
-
-Spring = {
-	GetModOptions = function() return 'asdf' end
-}
 
 local morphDefs = openfile2(path .. '/morphdefs/morph_defs.lua')
 
