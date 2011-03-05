@@ -374,10 +374,12 @@ function printUnit(unitname, mobile_only)
 	if lang == 'all' then
 		writeml("<b>Unitname:</b> " .. unitname .. brbr.. nlnl)
 		for _, curlang in ipairs(langNames) do
+			writeml('<div class="'.. curlang ..'_trans"> ' .. br.. nl)
 			writeml('<img src="http://zero-k.info/img/luaui/flags/'.. flags[curlang]  ..'.png" > ')
 			writeml("<b>Language:</b> " .. curlang .. br.. nl)
 			writeml("<b>Description</b>" ..br.. nl.. '>> ' .. (getDescription(unitDef, curlang) or '') .. br.. nl)
-			writeml("<b>Helptext</b> " ..br.. nl.. '>> ' .. (getHelpText(unitDef, curlang) or '') .. brbr.. nlnl)
+			writeml("<b>Helptext</b> " ..br.. nl.. '>> ' .. (getHelpText(unitDef, curlang) or '') .. br.. nl)
+			writeml('</div> ' ..  nlnl)
 		end
 		writeml('<hr />' .. br.. nlnl)
 		return
@@ -462,10 +464,12 @@ function printFac(facname)
 	if lang == 'all' then
 		writeml('<h3> Factory: ' .. facname .. ' </h3>' ..nlnl)
 		for _, curlang in ipairs(langNames) do
+				writeml('<div class="'.. curlang ..'_trans"> ' .. br.. nl)
 				writeml('<img src="http://zero-k.info/img/luaui/flags/'.. flags[curlang]  ..'.png"> ')
 				writeml("<b>Language:</b> " .. curlang .. br.. nl)
 				writeml("<b>Description</b>" .. br.. nl.. '>> ' .. (getDescription(curFacDef, curlang) or '') .. br..nl)
-				writeml("<b>Helptext</b> " ..br..nl.. '>> ' .. (getHelpText(curFacDef, curlang) or '') .. brbr.. nlnl)
+				writeml("<b>Helptext</b> " ..br..nl.. '>> ' .. (getHelpText(curFacDef, curlang) or '') .. br.. nlnl)
+				writeml('</div> ' ..  nlnl)
 		end
 		writeml('<hr />' .. br.. nlnl)
 		writeml('<blockquote>'.. nlnl)
@@ -571,5 +575,53 @@ toc = toc .. brbr
 if lang ~= 'featured' then
 	f:write(toc)
 end
+
+if lang == 'all' then
+	local checkboxes = '';
+	for _, curlang in ipairs(langNames) do
+		checkboxes = checkboxes .. [[
+			<label for="]] .. curlang .. [[_show">]] .. curlang .. [[</label>
+			<input type="checkbox" id="]] .. curlang .. [[_show" checked="checked" >
+		]]
+	end
+	
+	html = [[
+		<!DOCTYPE html>
+		
+		<html>
+			<head>
+			<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+			<script type="text/javascript"> 
+				$(document).ready(function() {
+					$("input[id$=_show]").click(function(){
+						var lang;
+						lang = $(this).attr("id").substr(0, 2);
+						if( $(this).attr("checked") )
+						{
+							$("." + lang + "_trans").show();
+						}
+						else
+						{
+							$("." + lang + "_trans").hide();
+						}
+					});
+					
+					$("input[id$=_show]").attr("checked", "checked");
+				});
+				
+			</script>
+				
+		</head>
+		
+		<body>
+		
+			<form>
+				]]
+				.. checkboxes ..
+				[[
+			</form>
+	]] .. html .. [[ </body> ]]
+end
+
 f:write(html)
 io.close(f)
