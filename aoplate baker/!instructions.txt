@@ -3,7 +3,7 @@ Installation
 1) install Python 2.7 http://www.python.org/ftp/python/2.7/python-2.7.msi
 2) install PIL http://effbot.org/media/downloads/PIL-1.1.7.win32-py2.7.exe
 3) install xNormal http://c.eat3d.com/files/xnormal_3.17.3_installer.exe
-
+4) verify xnormal path in aobaker.py (may differ if your system isnt 64bit)
 
 Baking
 -------
