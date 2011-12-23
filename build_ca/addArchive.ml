@@ -1,4 +1,5 @@
 let main zip_path store_path =
+	let _ = Unix.umask 0o0002 in
 	let paths = Paths.create store_path in
 	Paths.init paths;
 	let zip = Zip.open_in zip_path in

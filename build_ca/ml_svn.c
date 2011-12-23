@@ -199,7 +199,7 @@ value ml_svn_client_cat(value source, value revision_num, value callback)
 svn_error_t *log_callback (void *baton, svn_log_entry_t *log_entry, apr_pool_t *pool)
 {
 	CAMLparam0 ();
-	CAMLlocal2 (mcallback, tuple);
+	CAMLlocal5 (mcallback, tuple, camlauthor, camldate, camlmessage);
 
 	const char *author;
 	const char *date;
@@ -209,10 +209,18 @@ svn_error_t *log_callback (void *baton, svn_log_entry_t *log_entry, apr_pool_t *
 
 	svn_compat_log_revprops_out(&author, &date, &message, log_entry->revprops);
 
+
+	if (author == NULL) camlauthor = caml_alloc_string(0);
+	else camlauthor = caml_copy_string(author);
+	if (date == NULL) camldate = caml_alloc_string(0);
+	else camldate = caml_copy_string(date);
+	if (message == NULL) camlmessage = caml_alloc_string(0);
+	else camlmessage = caml_copy_string(message);
+
 	tuple = caml_alloc_tuple(3);
-	Store_field(tuple, 0, caml_copy_string(author));
-	Store_field(tuple, 1, caml_copy_string(date));
-	Store_field(tuple, 2, caml_copy_string(message));
+	Store_field(tuple, 0, camlauthor);
+	Store_field(tuple, 1, camldate);
+	Store_field(tuple, 2, camlmessage);
 	
 	caml_callback(mcallback, tuple);
 

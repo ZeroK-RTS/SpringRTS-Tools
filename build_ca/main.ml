@@ -121,9 +121,16 @@ let main svn_root log_root modinfo store_path current_rev prefix =
 		let output = Paths.build paths prefix version in
 		Printf.printf "Generating zip file: %s\n" output;
 		flush stdout;
-		Sdz.make paths digest output
+		Sdz.make paths digest output;
+		let command = Printf.sprintf "/home/packages/build_ca/upload.py %s %s %s" output hex tag_branch in
+		let status = Unix.system command in
+		match status with
+		| Unix.WEXITED 0 -> ()
+		| Unix.WEXITED n -> Printf.printf "upload.py exited abnormally, error code: %d" n
+		| _ -> ()
 	end
 		
 		
 let () = main Sys.argv.(1) Sys.argv.(2) Sys.argv.(3) Sys.argv.(4) Sys.argv.(5) Sys.argv.(6)
+
 
