@@ -26,7 +26,7 @@ local start, damage
 
 function gadget:UnitDamaged(unitID, unitDefID, unitTeam, unitDamage, paralyzer, 
                             weaponID, attackerID, attackerDefID, attackerTeam)
-    --Spring.SetUnitExperience(attackerID,0.01)
+    --Spring.SetUnitExperience(attackerID,0.001)
     local frame = Spring.GetGameFrame()
     -- delay
     if last then
