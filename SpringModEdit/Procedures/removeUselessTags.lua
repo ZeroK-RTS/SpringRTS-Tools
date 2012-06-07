@@ -15,7 +15,10 @@ local weapontags = {
 	"selfprop",
 	"twophase",
 	"vlaunch",
-	"noselfdamage",
+	"holdtime",
+	"startsmoke",
+	"endsmoke",
+	--"minbarrelangle",
 }
 
 local unittags = {
@@ -27,6 +30,13 @@ local unittags = {
 	"tedclass",
 	"designation",
 	"defaultmissiontype",
+}
+
+local featuretags = {
+	"seqnamereclamate",
+	"worlds",
+	"height",
+	"featurereclamate",
 }
 
 for unit, weapon, weaponDef in IteratorWeapons() do
