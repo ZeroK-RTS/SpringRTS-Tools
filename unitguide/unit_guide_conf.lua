@@ -3,7 +3,7 @@ local faction_names = {
 	one = ''
 }
 local cons = {
-	one = 'armcom',
+	one = 'armcom1',
 }
 
 

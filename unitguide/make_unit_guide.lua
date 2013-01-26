@@ -507,6 +507,8 @@ function printFaction(intname, image)
 	local description = faction_data.faction_descriptions[intname]
 	local somecon = faction_data.cons[intname]
 	
+	local buildopts = openfile2(path ..'/gamedata/buildoptions.lua') or {}
+	
 	toc = toc .. brbr .. name
 	
 	toc = toc .. '<br /> <b><a href="#factories">Factories</a></b> <blockquote>'
@@ -539,7 +541,7 @@ function printFaction(intname, image)
 		if lang ~= 'featured' then
 			writeml('<a name="otherstructures"></a><h3> Other Structures </h3> ' ..nlnl)
 		end
-		for _,unitname in pairs(unitDef.buildoptions) do
+		for _,unitname in pairs(buildopts) do
 			if not printedunitlistkeys[unitname] then
 				printUnit(unitname)
 			end
