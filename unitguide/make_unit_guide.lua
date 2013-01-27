@@ -8,7 +8,7 @@ local function to_string(data, indent)
     if(indent == nil) then
         indent = 0
     end
-	local indenter = "    "
+  local indenter = "    "
     -- Check the type
     if(type(data) == "string") then
         str = str .. (indenter):rep(indent) .. data .. "\n"
@@ -34,7 +34,7 @@ local function to_string(data, indent)
 	elseif(type(data) == "function") then
 		str = str .. (indenter):rep(indent) .. 'function' .. "\n"
     else
-        echo(1, "Error: unknown data type: %s", type(data))
+        print(1, "Error: unknown data type: %s", type(data))
     end
 
     return str
@@ -173,7 +173,7 @@ end
 
 
 
-local morphDefs = openfile2(path .. '/morphdefs/morph_defs.lua')
+local morphDefs = openfile2(path .. '/morph_defs.lua')
 
 function trac_html (html)
 	writeml(html)	
