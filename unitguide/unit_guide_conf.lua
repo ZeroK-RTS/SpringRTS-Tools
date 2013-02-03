@@ -7,6 +7,12 @@ local cons = {
 }
 
 
+
+local printMobileOnly = {
+	armcsa = true,
+}
+
+
 local facs = {}
 local staticw = {}
 
@@ -24,6 +30,7 @@ facs.one = {
 	'corsy',
 	'armcsa',
 	'missilesilo',
+	'striderhub',
 }
 staticw.one =
 {
@@ -89,6 +96,7 @@ local faction_data = {
 	staticw = staticw, 
 	faction_descriptions = faction_descriptions, 
 	cons = cons,
+	printMobileOnly = printMobileOnly,
 }
 
 return faction_data

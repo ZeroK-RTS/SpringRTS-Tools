@@ -1,14 +1,10 @@
-local printStatics = {
-	missilesilo = true,
-}
-
 local function to_string(data, indent)
     local str = ""
 
     if(indent == nil) then
         indent = 0
     end
-  local indenter = "    "
+	local indenter = "    "
     -- Check the type
     if(type(data) == "string") then
         str = str .. (indenter):rep(indent) .. data .. "\n"
@@ -458,7 +454,7 @@ function printUnit(unitname, mobile_only)
 end
 
 
-function printFac(facname)
+function printFac(facname, printMobileOnly)
 	curFacDef = unitDefs[facname]
 
 	if lang == 'all' then
@@ -490,8 +486,7 @@ function printFac(facname)
 	end
 
 	for _,unitname in pairs(curFacDef.buildoptions) do
-		if printStatics[unitName] then printUnit(unitname,false)
-		else printUnit(unitname,true) end
+		printUnit(unitname, printMobileOnly)
 	end
 	
 	if lang == 'all' then
@@ -506,6 +501,7 @@ function printFaction(intname, image)
 	local name = faction_data.faction_names[intname]
 	local description = faction_data.faction_descriptions[intname]
 	local somecon = faction_data.cons[intname]
+	local printMobileOnly = faction_data.printMobileOnly
 	
 	local buildopts = openfile2(path ..'/gamedata/buildoptions.lua') or {}
 	
@@ -519,7 +515,7 @@ function printFaction(intname, image)
 		writeml('<a name="factories"></a><h3> Factories </h3> ' ..nlnl)
 	end
 	for _, fac in pairs(faclist) do
-		printFac(fac)
+		printFac(fac, printMobileOnly[fac])
 		printedunitlistkeys[fac] = true
 	end
 	toc = toc .. '</blockquote>'
