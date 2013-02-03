@@ -502,8 +502,9 @@ function printFaction(intname, image)
 	local description = faction_data.faction_descriptions[intname]
 	local somecon = faction_data.cons[intname]
 	local printMobileOnly = faction_data.printMobileOnly
+	local useBuildOptionFile = faction_data.useBuildOptionFile
 	
-	local buildopts = openfile2(path ..'/gamedata/buildoptions.lua') or {}
+	
 	
 	toc = toc .. brbr .. name
 	
@@ -531,9 +532,13 @@ function printFaction(intname, image)
 	toc = toc .. '<br /><br /><b><a href="#otherstructures">Other Structures</a></b>'
 
 	if somecon then
+		
 		local slist = {}
 		local unitDef = unitDefs[somecon]
 		if not unitDef then return false; end
+		
+		local buildopts = useBuildOptionFile and openfile2(path ..'/buildoptions.lua') or unitDef.buildoptions or {}
+		
 		if lang ~= 'featured' then
 			writeml('<a name="otherstructures"></a><h3> Other Structures </h3> ' ..nlnl)
 		end

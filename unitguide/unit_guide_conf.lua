@@ -24,6 +24,7 @@ facs.one = {
 	'factoryveh',
 	'factorytank',
 	'factoryhover',
+	'factoryamph',
 		
 	'factoryplane',
 	'factorygunship',
@@ -97,6 +98,7 @@ local faction_data = {
 	faction_descriptions = faction_descriptions, 
 	cons = cons,
 	printMobileOnly = printMobileOnly,
+	useBuildOptionFile = true,
 }
 
 return faction_data
