@@ -1,6 +1,6 @@
 local doPreviewOnly = true 
 
-local facs = {
+local facs = { -- These factory names are completely wrong
 	"armvp",
 	"corvp",
 	"armfhp",
