@@ -28,7 +28,7 @@ facs.one = {
 		
 	'factoryplane',
 	'factorygunship',
-	'corsy',
+	'factoryship',
 	'armcsa',
 	'missilesilo',
 	'striderhub',
