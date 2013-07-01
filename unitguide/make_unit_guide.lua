@@ -442,8 +442,9 @@ function printUnit(unitname, mobile_only)
 				morphstr = morphstr .. '<a href="#unit-' .. unitDef.name .. '">' .. unitDef.name .. '</a>' ..  cost .. ', '
 			end
 		end
+		morphstr = morphstr:sub(1,-3) -- remove final ", "
 		morphstr = morphstr .. '</span>'
-		writeml(morphstr:sub(1,-3) .. nlnl)
+		writeml(morphstr .. nlnl)
 	end
 	--]]
 	
