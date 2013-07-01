@@ -169,7 +169,7 @@ end
 
 
 
-local morphDefs = openfile2(path .. '/morph_defs.lua')
+local morphDefs = openfile2(path .. '/morphdefs/morph_defs.lua')
 
 function trac_html (html)
 	writeml(html)	
