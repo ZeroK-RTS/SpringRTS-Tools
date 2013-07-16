@@ -1,4 +1,3 @@
-
 local faction_names = {
 	one = ''
 }
@@ -55,6 +54,10 @@ staticw.one =
 	'cordoom',
 	'corbhmth',
 	'armbrtha',
+   
+  'mahlazer',
+  'raveparty',
+  'zenith',
 }
 
 local faction_descriptions = {
