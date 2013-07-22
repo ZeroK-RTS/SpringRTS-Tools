@@ -2,11 +2,14 @@
 
 TMPDIR=`mktemp -d`
 UNITS="$TMPDIR/units"
-MORPHDEFS="$UNITS/morph_defs.lua"
+EXTRADEFSDIR=`mkdir $TMPDIR/extradefs`
+EXTRADEFS="$TMPDIR/extradefs"
 MARKUP="$TMPDIR/markup"
 
-svn export file:///home/ca/svn/trunk/mods/ca/units "$UNITS"
-svn export file:///home/ca/svn/trunk/mods/ca/LuaRules/Configs/morph_defs.lua "$MORPHDEFS"
+svn export http://zero-k.googlecode.com/svn/trunk/mods/zk/units "$UNITS"
+svn export http://zero-k.googlecode.com/svn/trunk/mods/zk/LuaRules/Configs/morph_defs.lua "$EXTRADEFS/morph_defs.lua"
+svn export http://zero-k.googlecode.com/svn/trunk/mods/zk/gamedata/buildoptions.lua "$EXTRADEFS/buildoptions.lua"
+
 #for i in $UNITS/*.lua; do sed -r "s/.+(unitDef = \{)/\1/g" $i > $i.old; mv $i.old $i; done
 
 lua /home/ca/bin/manual/make_unit_guide.lua $UNITS $MARKUP en

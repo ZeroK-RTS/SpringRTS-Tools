@@ -169,7 +169,8 @@ end
 
 
 
-local morphDefs = openfile2(path .. '/morphdefs/morph_defs.lua')
+--local morphDefs = openfile2(path .. '/morphdefs/morph_defs.lua')
+local morphDefs = openfile2(path .. '/extradefs/morph_defs.lua')
 
 function trac_html (html)
 	writeml(html)	
@@ -538,7 +539,8 @@ function printFaction(intname, image)
 		local unitDef = unitDefs[somecon]
 		if not unitDef then return false; end
 		
-		local buildopts = useBuildOptionFile and openfile2(path ..'/buildoptions.lua') or unitDef.buildoptions or {}
+		--local buildopts = useBuildOptionFile and openfile2(path ..'/buildoptions.lua') or unitDef.buildoptions or {}
+		local buildopts = useBuildOptionFile and openfile2(path ..'/extradefs/buildoptions.lua') or unitDef.buildoptions or {}
 		
 		if lang ~= 'featured' then
 			writeml('<a name="otherstructures"></a><h3> Other Structures </h3> ' ..nlnl)
