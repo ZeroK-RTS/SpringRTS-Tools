@@ -333,20 +333,83 @@ function printWeapons(unitDef)
 			
 			if not (ws.wname:find('Fake') or ws.wname:find('fake') ) then
 				cells = cells .. 
-					'<td align="right" valign="top">' ..nl..
-						'<table cellspacing="0" border="1" cellpadding="2" class="statstable">' ..nl..		
+					--'<td align="right" valign="top">' ..nl..
+						'<table cellspacing="0" border="1" cellpadding="2" class="statstable" style="display:inline-block" >' ..nl..		
 							tableHeader('<img src="http://zero-k.info/img/luaui/commands/Bold/attack.png" width="20" alt="Weapon" title="Weapon" style="vertical-align:top;" />' .. ws.wname ) .. 
 							tableRow('Damage', dam_str, 'class="statsfield"')..
 							tableRow('Reloadtime', ws.reloadtime, 'class="statsfield"')..
 							tableRow('Damage/second', dps_str, 'class="statsfield"')..
 							tableRow('Range', comma_value(ws.range), 'class="statsfield"' ) ..
-						'</table>' ..nl..
-					'</td>' ..nl
+						'</table>' ..nl
+					--..'</td>' ..nl
 			end
 		end
 
 	end
 	return cells
+end
+
+function PrintRemainingStats(unitDef)
+	
+	local ignoreDefs = {
+		name=1,
+		unitname=1,
+		maxdamage=1,
+		description=1,
+		maxvelocity=1,
+		buildpic=1,
+		buildcostmetal=1,
+		buildcostenergy=1,
+		
+		activatewhenbuilt=1,
+		category=1,
+		corpse=1,
+		explodeas=1,
+		icontype=1,
+		initcloaked=1,
+		movementclass=1,
+		nochasecategory=1,
+		objectname=1,
+		seismicsignature=1,
+		selfdestructas=1,
+		shownanospray=1,
+		upright=1,
+		
+		collisionvolumeoffsets=1,
+		collisionvolumescales=1,
+		collisionvolumetype=1,
+		
+		leavetracks=1,
+		trackoffset=1,
+		trackstrength=1,
+		trackstretch=1,
+		tracktype=1,
+		trackwidth=1,
+	}
+	
+	local unitDef2 = {}
+	for k,v in pairs(unitDef) do
+		if type(v) ~= 'table' and not ignoreDefs[k] then
+			unitDef2[#unitDef2+1] = {k,v}
+		end
+	end
+	table.sort(unitDef2, function(a,b) return a[1]<b[1] end)
+	
+	local stats = ''
+	
+	for i,v2 in pairs(unitDef2) do
+		local k = v2[1]
+		local v = v2[2]
+		
+		if type(v) == 'boolean' then
+			v = v and 'Yes' or 'No'
+		end
+		--writeml(k .. ' : ' .. v .. br)
+		stats = stats .. k .. ' : ' .. v .. '\\n'
+		
+	end
+	return '<a href="#" onclick="alert(\''..stats..'\'); return false;" >More Stats</a>'
+	
 end
 
 
@@ -399,32 +462,35 @@ function printUnit(unitname, mobile_only)
 	--]]
 	
 	local description = getDescription(unitDef)
-	writeml(''
-		..'<a name="unit-' .. unitDef.name .. '"></a> <a href="#unit-' .. unitDef.name .. '" class="unitname">'
-		.. unitDef.name .. '</a> - <span class="unitdesc">'.. description .. '</span></a> &nbsp;&nbsp;&nbsp;&nbsp;' 
-		.. nl
-		..'<a href="#toc"> [ ^ ] </a>'
-		.. nl
-		)
-
+	
 	local cost = unitDef.buildcostmetal and (unitDef.buildcostmetal > 0) and unitDef.buildcostmetal or unitDef.buildtime or unitDef.buildcostenergy
 
-	trac_html(
-		'<table border="0" width="100%">' ..nl
-		..'<tr>' ..nl
-			..'<td align="left" valign="top">' ..nl
-				..buildPic(unitDef.buildpic or unitDef.unitname .. '.png') ..nl
-			..'</td>' ..nl
-			..'<td align="right" valign="top" width="100%">' ..nl
-				..'<table cellspacing="0" border="1" cellpadding="2" class="statstable">' ..nl
-					..tableRow('<img src="http://zero-k.info/img/luaui/ibeam.png" width="20" alt="Cost" title="Cost" />', comma_value(cost)) 
-					..tableRow('<img src="http://zero-k.info/img/luaui/commands/Bold/health.png" width="20" alt="Health Points" title="Health Points" />', comma_value(unitDef.maxdamage)) 
-					..(unitDef.maxvelocity and (unitDef.maxvelocity+0) > 0 and tableRow('<img src="http://zero-k.info/img/luaui/draggrip.png" width="20" alt="Speed" title="Speed" />', unitDef.maxvelocity) or '') 
-				..'</table>' ..nl
-			..'</td>' ..nl
-			..weaponStats 
-		..'</tr>' ..nl
-		..'</table>'.. nl
+	trac_html(''
+		..'<div style="display:table; width:100%; ">' ..nl
+			..'<div style="display:table-row; ">' ..nl
+		
+				..'<div style="display:table-cell;   ">' ..nl
+				
+					..'<a name="unit-' .. unitDef.name .. '"></a> <a href="#unit-' .. unitDef.name .. '" class="unitname">'
+					.. unitDef.name .. '</a> - <span class="unitdesc">'.. description .. '</span></a> &nbsp;&nbsp;&nbsp;&nbsp;' .. nl
+					..'<a href="#toc"> [ ^ ] </a>' .. nl ..br
+				
+					..buildPic(unitDef.buildpic or unitDef.unitname .. '.png') ..nl
+				..'</div>' ..nl
+				
+				..'<div style="display:table-cell; text-align:right; vertical-align: top; ">' ..nl
+					..'<div style="float:right">'
+						..weaponStats 
+						..'<table cellspacing="0" border="1" cellpadding="2" class="statstable" style="display:inline-block; vertical-align:top; " >' ..nl
+							..tableRow('<img src="http://zero-k.info/img/luaui/ibeam.png" width="20" alt="Cost" title="Cost" />', comma_value(cost)) 
+							..tableRow('<img src="http://zero-k.info/img/luaui/commands/Bold/health.png" width="20" alt="Health Points" title="Health Points" />', comma_value(unitDef.maxdamage)) 
+							..(unitDef.maxvelocity and (unitDef.maxvelocity+0) > 0 and tableRow('<img src="http://zero-k.info/img/luaui/draggrip.png" width="20" alt="Speed" title="Speed" />', unitDef.maxvelocity) or '')
+							..'<tr><td colspan="2">' .. PrintRemainingStats(unitDef).. '</tr>'
+						..'</table>' ..nl
+					..'</div>'
+				..'</div>' ..nl
+			 ..'</div>'.. nl
+		 ..'</div>'.. nl
 	)
 
 	writeml('<span class="helptext"> '.. getHelpText(unitDef) .. '</span>' .. nlnl .. brbr)
@@ -448,6 +514,8 @@ function printUnit(unitname, mobile_only)
 		writeml(morphstr .. nlnl)
 	end
 	--]]
+	
+	
 	
 	writeml('<hr />' ..nlnl)
 	
