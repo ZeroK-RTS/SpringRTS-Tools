@@ -250,11 +250,18 @@ function printWeapons(unitDef)
 					wsTemp.projectiles = wd[weaponName].projectiles or 1
 					wsTemp.dam = 0
 					wsTemp.damw = 0
+					wsTemp.damBreakdown = ''
 					if wsTemp.paralyzer then
 						wsTemp.damw = wsTemp.bestTypeDamagew * wsTemp.burst * wsTemp.projectiles
 					else
 						wsTemp.dam = wsTemp.bestTypeDamage * wsTemp.burst * wsTemp.projectiles
+						if wsTemp.projectiles > 1 or wsTemp.burst > 1 then
+							wsTemp.damBreakdown = ' (' .. wsTemp.bestTypeDamage .. ' x ' .. (wsTemp.projectiles * wsTemp.burst) .. ')'
+						end
 					end
+					
+					
+					
 					
 					-- [[
 					if wd[weaponName].customparams and wd[weaponName].customparams.extra_damage then
@@ -262,12 +269,22 @@ function printWeapons(unitDef)
 					end
 					--]]
 					
-					wsTemp.reloadtime = wd[weaponName].reloadtime or ''
-					wsTemp.airWeapon = wd[weaponName].toAirWeapon or false
-					wsTemp.range = wd[weaponName].range or ''
-					wsTemp.wname = wd[weaponName].name or 'NoName Weapon'
-					wsTemp.dps = 0
-					wsTemp.dpsw = 0
+					wsTemp.reloadtime 		= wd[weaponName].reloadtime or ''
+					wsTemp.range 			= wd[weaponName].range or ''
+					wsTemp.wname 			= wd[weaponName].name or 'NoName Weapon'
+					wsTemp.areaofeffect 	= wd[weaponName].areaofeffect or ''
+					wsTemp.dps 				= 0
+					wsTemp.dpsw 			= 0
+					
+					if wd[weaponName].weapontype:lower() == 'shield' then
+						wsTemp.shield 				= true
+						wsTemp.shieldpower			= wd[weaponName].shieldpower or ''
+						wsTemp.shieldpowerregen		= wd[weaponName].shieldpowerregen or ''
+						wsTemp.shieldregenenergy	= wd[weaponName].shieldpowerregenenergy or ''
+						wsTemp.shieldradius			= wd[weaponName].shieldradius or ''
+					
+					end
+					
 					if  wsTemp.reloadtime ~= '' and wsTemp.reloadtime > 0 then
 						if wsTemp.paralyzer then
 							wsTemp.dpsw = math.floor(wsTemp.damw/wsTemp.reloadtime + 0.5)
@@ -304,7 +321,7 @@ function printWeapons(unitDef)
 	for index,ws in pairs(weaponList) do
 		local mainweapon = merw and merw[index]
 		if not ws.slaveTo then
-			local dam = ws.finalDamage
+			--local dam = ws.finalDamage
 		
 			if mainweapon then
 				for _,index2 in ipairs(mainweapon) do
@@ -331,22 +348,63 @@ function printWeapons(unitDef)
 				dps_str = '<span class="paralyze">' .. dps_str .. comma_value(ws.dpsw) .. ' (P)</span>'
 			end
 			
+			dam_str = dam_str .. ws.damBreakdown
+			
 			if not (ws.wname:find('Fake') or ws.wname:find('fake') ) then
-				cells = cells .. 
-					--'<td align="right" valign="top">' ..nl..
-						'<table cellspacing="0" border="1" cellpadding="2" class="statstable" style="display:inline-block" >' ..nl..		
-							tableHeader('<img src="http://zero-k.info/img/luaui/commands/Bold/attack.png" width="20" alt="Weapon" title="Weapon" style="vertical-align:top;" />' .. ws.wname ) .. 
-							tableRow('Damage', dam_str, 'class="statsfield"')..
-							tableRow('Reloadtime', ws.reloadtime, 'class="statsfield"')..
-							tableRow('Damage/second', dps_str, 'class="statsfield"')..
-							tableRow('Range', comma_value(ws.range), 'class="statsfield"' ) ..
-						'</table>' ..nl
-					--..'</td>' ..nl
+				cells = cells .. '<table cellspacing="0" border="1" cellpadding="2" class="statstable" style="display:inline-block; vertical-align:top;" >' ..nl
+						
+				if not ws.shield then
+					cells = cells
+						.. tableHeader('<img src="http://zero-k.info/img/luaui/commands/Bold/attack.png" width="20" alt="Weapon" title="Weapon" /> ' .. ws.wname ) 
+						.. tableRow('Damage', dam_str, 'class="statsfield"')
+						.. tableRow('Reloadtime', ws.reloadtime, 'class="statsfield"')
+						.. tableRow('Damage/second', dps_str, 'class="statsfield"')
+						.. tableRow('Range', comma_value(ws.range), 'class="statsfield"' )
+						.. tableRow('Area of Effect', comma_value(ws.areaofeffect), 'class="statsfield"' ) 
+				else
+					cells = cells
+						.. tableHeader('<img src="http://zero-k.info/img/luaui/commands/Bold/guard.png" width="20" alt="Weapon" title="Shield" /> ' .. ws.wname )
+						.. tableRow('Power', 				ws.shieldpower, 		'class="statsfield"')
+						.. tableRow('Regeneration', 		ws.shieldpowerregen, 	'class="statsfield"')
+						.. tableRow('Energy to Regen', 	ws.shieldregenenergy, 	'class="statsfield"')
+						.. tableRow('Radius', 				ws.shieldradius, 		'class="statsfield"')
+						
+				end
+				cells = cells .. '</table>' ..nl
 			end
 		end
 
 	end
 	return cells
+end
+
+function GetDefName(k)
+	
+	local defNames = {
+		brakerate = 'Brake Rate',
+		buildtime = 'Build Time',
+		footprintx = 'Footprint X',
+		footprintz = 'Footprint Z',
+		idleautoheal = 'Idle Autoheal',
+		idletime = 'Idle Time',
+		maxslope = 'Max Slope',
+		maxwaterdepth = 'Max Water Depth',
+		mincloakdistance = 'Decloak Distance',
+		sightdistance = 'Sight Distance',
+		turnrate = 'Turn Rate',
+		workertime = 'Build Power',
+	}
+	
+	local defName
+	
+	if k:sub(1,3) == 'can' then
+		defName = 'Can ' .. k:sub(4,4):upper() .. k:sub(5):lower()
+	else
+		defName = defNames[ k:lower() ] or ( k:sub(1,1):upper() .. k:sub(2) )
+	end
+	
+	return defName
+	
 end
 
 function PrintRemainingStats(unitDef)
@@ -362,17 +420,23 @@ function PrintRemainingStats(unitDef)
 		buildcostenergy=1,
 		
 		activatewhenbuilt=1,
+		buildtime=1,
 		category=1,
 		corpse=1,
 		explodeas=1,
+		firestate=1,
 		icontype=1,
 		initcloaked=1,
+		modelcenteroffset=1,
 		movementclass=1,
+		movestate=1,
 		nochasecategory=1,
 		objectname=1,
+		script=1,
 		seismicsignature=1,
 		selfdestructas=1,
 		shownanospray=1,
+		side=1,
 		upright=1,
 		
 		collisionvolumeoffsets=1,
@@ -386,11 +450,11 @@ function PrintRemainingStats(unitDef)
 		tracktype=1,
 		trackwidth=1,
 	}
-	
 	local unitDef2 = {}
 	for k,v in pairs(unitDef) do
-		if type(v) ~= 'table' and not ignoreDefs[k] then
-			unitDef2[#unitDef2+1] = {k,v}
+		if type(v) ~= 'table' and not ignoreDefs[k] and k:sub(1,3) ~= 'can' then
+			local defName = GetDefName(k)
+			unitDef2[#unitDef2+1] = {defName,v}
 		end
 	end
 	table.sort(unitDef2, function(a,b) return a[1]<b[1] end)
@@ -405,7 +469,8 @@ function PrintRemainingStats(unitDef)
 			v = v and 'Yes' or 'No'
 		end
 		--writeml(k .. ' : ' .. v .. br)
-		stats = stats .. k .. ' : ' .. v .. '\\n'
+		
+		stats = stats .. k  .. ' : ' .. v .. '\\n'
 		
 	end
 	return '<a href="#" onclick="alert(\''..stats..'\'); return false;" >More Stats</a>'
@@ -473,7 +538,7 @@ function printUnit(unitname, mobile_only)
 				
 					..'<a name="unit-' .. unitDef.name .. '"></a> <a href="#unit-' .. unitDef.name .. '" class="unitname">'
 					.. unitDef.name .. '</a> - <span class="unitdesc">'.. description .. '</span></a> &nbsp;&nbsp;&nbsp;&nbsp;' .. nl
-					..'<a href="#toc"> [ ^ ] </a>' .. nl ..br
+					..'<a href="#toc" style="white-space:nowrap;"> [ ^ ] </a>' .. nl ..br
 				
 					..buildPic(unitDef.buildpic or unitDef.unitname .. '.png') ..nl
 				..'</div>' ..nl
@@ -590,35 +655,46 @@ function printFaction(intname, image)
 		printedunitlistkeys[fac] = true
 	end
 	toc = toc .. '</blockquote>'
-	toc = toc .. '<b><a href="#staticweapons">Static Weapons</a></b>'
 
-	if lang ~= 'featured' then
-		writeml('<a name="staticweapons"></a><h3> Static Weapons </h3> ' ..nlnl)
-	end
-	for _, d in pairs(dlist) do
-		printUnit(d)
-		printedunitlistkeys[d] = true
-	end
-	toc = toc .. '<br /><br /><b><a href="#otherstructures">Other Structures</a></b>'
-
-	if somecon then
-		
-		local slist = {}
+	local buildopts = {}
+	if useBuildOptionFile then
+		buildopts = openfile2(path ..'/extradefs/buildoptions.lua')
+	elseif somecon then
 		local unitDef = unitDefs[somecon]
 		if not unitDef then return false; end
+		buildopts = unitDef.buildoptions or {}
+	end
+	local weaponStructs = {}
+	local regularStructs = {}
 		
-		--local buildopts = useBuildOptionFile and openfile2(path ..'/buildoptions.lua') or unitDef.buildoptions or {}
-		local buildopts = useBuildOptionFile and openfile2(path ..'/extradefs/buildoptions.lua') or unitDef.buildoptions or {}
-		
-		if lang ~= 'featured' then
-			writeml('<a name="otherstructures"></a><h3> Other Structures </h3> ' ..nlnl)
-		end
-		for _,unitname in pairs(buildopts) do
-			if not printedunitlistkeys[unitname] then
-				printUnit(unitname)
+	for _,unitname in pairs(buildopts) do	
+		if not printedunitlistkeys[unitname] then
+			if unitDefs[unitname].weapons and #(unitDefs[unitname].weapons) > 0 then
+				weaponStructs[#weaponStructs+1] = unitname
+			else
+				regularStructs[#regularStructs+1] = unitname
 			end
 		end
 	end
+	
+	toc = toc .. '<b><a href="#staticweapons">Static Weapons</a></b>'
+	if lang ~= 'featured' then
+		writeml('<a name="staticweapons"></a><h3> Static Weapons & Defense</h3> ' ..nlnl)
+	end
+	for _,unitname in pairs(weaponStructs) do	
+		printUnit(unitname)
+	end
+	
+	
+	toc = toc .. '<br /><br /><b><a href="#otherstructures">Other Structures</a></b>'
+	if lang ~= 'featured' then
+		writeml('<a name="otherstructures"></a><h3> Other Structures </h3> ' ..nlnl)
+	end
+	for _,unitname in pairs(regularStructs) do	
+		printUnit(unitname)
+	end
+		
+
 end
 
 

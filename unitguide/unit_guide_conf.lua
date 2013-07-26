@@ -32,33 +32,6 @@ facs.one = {
 	'missilesilo',
 	'striderhub',
 }
-staticw.one =
-{
-	'corllt',
-	'corhlt',
-	'corgrav',
-	'armdeva',
-	'armartic',
-	'armpb',
-	
-	'corrl',
-	'screamer',
-	'corrazor',
-	'corflak',
-	'missiletower',
-	'armcir',
-	'cortl',
-	
-	'corsilo',
-	'armanni',
-	'cordoom',
-	'corbhmth',
-	'armbrtha',
-   
-  'mahlazer',
-  'raveparty',
-  'zenith',
-}
 
 local faction_descriptions = {
 	en = {
