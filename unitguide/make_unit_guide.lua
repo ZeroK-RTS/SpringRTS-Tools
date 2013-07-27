@@ -307,6 +307,12 @@ function printWeapons(unitDef)
 					
 				end
 			end
+			if wd[weaponName].customParams.stats_damage then
+				wsTemp.dam = wd[weaponName].customParams.stats_damage
+			end
+			if wd[weaponName].customParams.stats_empdamage then
+				wsTemp.damw = wd[weaponName].customParams.stats_empdamage
+			end
 			
 			if not wsTemp.wname then print("BAD unit ", unitDef.unitname) return '' end -- stupid negative in corhurc is breaking me.
 			weaponStats[i] = wsTemp
