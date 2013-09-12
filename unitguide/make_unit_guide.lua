@@ -236,6 +236,8 @@ function printWeapons(unitDef)
 			wsTemp.paralyzer = wd[weaponName].paralyzer	
 			for unitType, damage in pairs(wd[weaponName].damage) do
 				
+				damage = math.max(damage, 0) --shadow has negative damage, breaks the below logic.
+				
 				if (wsTemp.bestTypeDamage <= (damage+0) and not wsTemp.paralyzer)
 					or (wsTemp.bestTypeDamagew <= (damage+0) and wsTemp.paralyzer)
 					then
@@ -307,15 +309,14 @@ function printWeapons(unitDef)
 					
 				end
 			end
-			if wd[weaponName].customParams.stats_damage then
-				wsTemp.dam = wd[weaponName].customParams.stats_damage
-			end
-			if wd[weaponName].customParams.stats_empdamage then
-				wsTemp.damw = wd[weaponName].customParams.stats_empdamage
-			end
 			
-			if not wsTemp.wname then print("BAD unit ", unitDef.unitname) return '' end -- stupid negative in corhurc is breaking me.
-			weaponStats[i] = wsTemp
+			-- may be broken
+			if not wsTemp.wname then
+				print("BAD unit ", unitDef.unitname) return ''
+			else
+				weaponStats[i] = wsTemp
+			end 
+			
 
 		end
 	end
