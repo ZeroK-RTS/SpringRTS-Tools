@@ -1,14 +1,22 @@
 #!/bin/bash
 
+
 TMPDIR=`mktemp -d`
 UNITS="$TMPDIR/units"
+UNITPICS="./unitpics"
 EXTRADEFSDIR=`mkdir $TMPDIR/extradefs`
 EXTRADEFS="$TMPDIR/extradefs"
 MARKUP="$TMPDIR/markup"
 
+
+rm -rf "$UNITPICS"
+
 svn export http://zero-k.googlecode.com/svn/trunk/mods/zk/units "$UNITS"
 svn export http://zero-k.googlecode.com/svn/trunk/mods/zk/LuaRules/Configs/morph_defs.lua "$EXTRADEFS/morph_defs.lua"
 svn export http://zero-k.googlecode.com/svn/trunk/mods/zk/gamedata/buildoptions.lua "$EXTRADEFS/buildoptions.lua"
+
+svn export http://zero-k.googlecode.com/svn/trunk/mods/zk/unitpics "$UNITPICS"
+
 
 #for i in $UNITS/*.lua; do sed -r "s/.+(unitDef = \{)/\1/g" $i > $i.old; mv $i.old $i; done
 

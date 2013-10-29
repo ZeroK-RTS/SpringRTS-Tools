@@ -177,7 +177,8 @@ function trac_html (html)
 end
 
 function buildPic(buildPicName)
-	return '<img src="http://zero-k.info/img/unitpics/'.. string.lower(buildPicName) ..'" width="85" height="64" title="'.. buildPicName  ..'" class="buildpic" >'
+	--return '<img src="http://zero-k.info/img/unitpics/'.. string.lower(buildPicName) ..'" width="85" height="64" title="'.. buildPicName  ..'" class="buildpic" >'
+	return '<img src="http://packages.springrts.com/zkmanual/unitpics/'.. string.lower(buildPicName) ..'" width="85" height="64" title="'.. buildPicName  ..'" class="buildpic" >'
 		
 end
 
