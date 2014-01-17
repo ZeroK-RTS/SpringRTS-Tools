@@ -169,8 +169,8 @@ end
 
 
 
---local morphDefs = openfile2(path .. '/morphdefs/morph_defs.lua')
-local morphDefs = openfile2(path .. '/extradefs/morph_defs.lua')
+local morphDefs = openfile2(path .. '/LuaRules/Configs/morph_defs.lua')
+--local morphDefs = openfile2(path .. '/extradefs/morph_defs.lua')
 
 function trac_html (html)
 	writeml(html)	
@@ -666,7 +666,7 @@ function printFaction(intname, image)
 
 	local buildopts = {}
 	if useBuildOptionFile then
-		buildopts = openfile2(path ..'/extradefs/buildoptions.lua')
+		buildopts = openfile2(path ..'/gamedata/buildoptions.lua')
 	elseif somecon then
 		local unitDef = unitDefs[somecon]
 		if not unitDef then return false; end
