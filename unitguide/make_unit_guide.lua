@@ -107,6 +107,16 @@ local function scandir(dirname)
 	return tabby
 end
 
+local function GetRevision()
+	callit = os.tmpname()
+	os.execute("svn info http://zero-k.googlecode.com/svn/trunk/mods/zk/" .." >"..callit)
+	fs = io.open(callit,"r")
+	rv = fs:read("*all")
+	fs:close()
+	os.remove(callit)
+	return rv:match( 'Last Changed Rev:%s*(%d+)' )
+end
+
 local fileList = scandir(path ..'/units')
 for n,fileName in ipairs(fileList) do	
 	if fileName:find('.lua') then
@@ -154,7 +164,7 @@ local toc = ''
 toc = toc .. '<a name="toc"></a>'
 local function writeml(ml)
 	for word in ml:gmatch('<a name="(fac%-[^"]*)"') do 
-		toc = toc .. '<br /><a href="#'..word..'">'
+		toc = toc .. '<a href="#'..word..'">'
 			..word:gsub('fac%-', '')
 			..'</a> ' 
 	end
@@ -169,8 +179,8 @@ end
 
 
 
-local morphDefs = openfile2(path .. '/LuaRules/Configs/morph_defs.lua')
---local morphDefs = openfile2(path .. '/extradefs/morph_defs.lua')
+--local morphDefs = openfile2(path .. '/morphdefs/morph_defs.lua')
+local morphDefs = openfile2(path .. '/extradefs/morph_defs.lua')
 
 function trac_html (html)
 	writeml(html)	
@@ -505,13 +515,17 @@ function printUnit(unitname, mobile_only)
 	end
 
 	if lang == 'all' then
+		
+		
+		writeml( buildPic(unitDef.buildpic or unitDef.unitname .. '.png') ..nl )
 		writeml("<b>Unitname:</b> " .. unitname .. brbr.. nlnl)
+		
 		for _, curlang in ipairs(langNames) do
 			writeml('<div class="'.. curlang ..'_trans"> ' .. br.. nl)
 			writeml('<img src="http://zero-k.info/img/luaui/flags/'.. flags[curlang]  ..'.png" > ')
 			writeml("<b>Language:</b> " .. curlang .. br.. nl)
-			writeml("<b>Description</b>" ..br.. nl.. '>> ' .. (getDescription(unitDef, curlang) or '') .. br.. nl)
-			writeml("<b>Helptext</b> " ..br.. nl.. '>> ' .. (getHelpText(unitDef, curlang) or '') .. br.. nl)
+			writeml("<b>Description:</b>" .. (getDescription(unitDef, curlang) or '') .. br.. nl)
+			writeml("<b>Helptext:</b> " .. (getHelpText(unitDef, curlang) or '') .. br.. nl)
 			writeml('</div> ' ..  nlnl)
 		end
 		writeml('<hr />' .. br.. nlnl)
@@ -599,15 +613,18 @@ end
 
 function printFac(facname, printMobileOnly)
 	curFacDef = unitDefs[facname]
-
+	toc = toc .. '<div>'
 	if lang == 'all' then
-		writeml('<h3> Factory: ' .. facname .. ' </h3>' ..nlnl)
+		
+		writeml( buildPic(curFacDef.buildpic or curFacDef.unitname .. '.png') ..nl )
+		writeml('Factory: <b>' .. facname .. '</b> ' ..nlnl)
+		
 		for _, curlang in ipairs(langNames) do
 				writeml('<div class="'.. curlang ..'_trans"> ' .. br.. nl)
 				writeml('<img src="http://zero-k.info/img/luaui/flags/'.. flags[curlang]  ..'.png"> ')
 				writeml("<b>Language:</b> " .. curlang .. br.. nl)
-				writeml("<b>Description</b>" .. br.. nl.. '>> ' .. (getDescription(curFacDef, curlang) or '') .. br..nl)
-				writeml("<b>Helptext</b> " ..br..nl.. '>> ' .. (getHelpText(curFacDef, curlang) or '') .. br.. nlnl)
+				writeml("<b>Description:</b>" .. (getDescription(curFacDef, curlang) or '') .. br..nl)
+				writeml("<b>Helptext:</b> " .. (getHelpText(curFacDef, curlang) or '') .. br.. nlnl)
 				writeml('</div> ' ..  nlnl)
 		end
 		writeml('<hr />' .. br.. nlnl)
@@ -635,6 +652,7 @@ function printFac(facname, printMobileOnly)
 	if lang == 'all' then
 		writeml('</blockquote>'.. nlnl)
 	end
+	toc = toc .. '</div>'
 end
 
 
@@ -649,7 +667,7 @@ function printFaction(intname, image)
 	
 	
 	
-	toc = toc .. brbr .. name
+	toc = toc .. name
 	
 	toc = toc .. '<br /> <b><a href="#factories">Factories</a></b> <blockquote>'
 
@@ -666,7 +684,7 @@ function printFaction(intname, image)
 
 	local buildopts = {}
 	if useBuildOptionFile then
-		buildopts = openfile2(path ..'/gamedata/buildoptions.lua')
+		buildopts = openfile2(path ..'/extradefs/buildoptions.lua')
 	elseif somecon then
 		local unitDef = unitDefs[somecon]
 		if not unitDef then return false; end
@@ -731,15 +749,19 @@ end
 
 toc = toc .. brbr
 if lang ~= 'featured' then
-	f:write(toc)
+	html = toc .. html
 end
+
+
+html = '<h1>Unit Guide</h1> ' ..nl .. '<div style="font-size:x-small">Revision: '.. GetRevision() ..'</div> ' ..nlnl .. html
+
 
 if lang == 'all' then
 	local checkboxes = '';
 	for _, curlang in ipairs(langNames) do
 		checkboxes = checkboxes .. [[
-			<label for="]] .. curlang .. [[_show">]] .. curlang .. [[</label>
-			<input type="checkbox" id="]] .. curlang .. [[_show" checked="checked" >
+			<label for="]] .. curlang .. [[_show">[ ]] .. curlang .. [[</label>
+			<input type="checkbox" id="]] .. curlang .. [[_show" checked="checked" > ]
 		]]
 	end
 	
