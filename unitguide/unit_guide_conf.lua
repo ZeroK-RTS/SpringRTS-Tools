@@ -75,6 +75,8 @@ local faction_data = {
 	cons = cons,
 	printMobileOnly = printMobileOnly,
 	useBuildOptionFile = true,
+	path='http://packages.springrts.com/zkmanual',
+	svnurl='http://zero-k.googlecode.com/svn/trunk/mods/zk'
 }
 
 return faction_data

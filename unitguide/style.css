@@ -6,7 +6,14 @@
     padding:5px;
     margin-bottom: 10px;
     
+    border-radius: 5px;
+    
     border-image: url("http://weblobby.springrts.com/test-qtcpp/img/chili/carbon/tech_window.png") 63 fill / 32px repeat repeat;
+    
+    /*
+    border-image: url("http://zero-k.googlecode.com/svn/trunk/mods/zk/LuaUI/Widgets/chili/Skins/DarkHive/tech_window.png") 63 fill / 32px repeat repeat;
+    background:lightgray;
+    */
 }
 
 /* eliminate outer left-right borders on every first and last table cell in row */

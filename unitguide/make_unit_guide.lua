@@ -49,6 +49,7 @@ local f = loadfile('./unit_guide_conf.lua')
 local faction_data = f()
 
 local unitDefs = {}
+local weaponDefs = {}
 
 Spring = { 
 	GetModOptions = function() end,
@@ -109,7 +110,7 @@ end
 
 local function GetRevision()
 	callit = os.tmpname()
-	os.execute("svn info http://zero-k.googlecode.com/svn/trunk/mods/zk/" .." >"..callit)
+	os.execute("svn info " .. faction_data.svnurl .." >"..callit)
 	fs = io.open(callit,"r")
 	rv = fs:read("*all")
 	fs:close()
@@ -119,14 +120,30 @@ end
 
 local fileList = scandir(path ..'/units')
 for n,fileName in ipairs(fileList) do	
-	if fileName:find('.lua') then
+	if fileName:find('.lua$') then
 
 		local unitDefsTable = openfile2(path ..'/units/'.. fileName)
 		if not unitDefsTable then 
 			print('Error #1 ' .. fileName)
 		else
 			for k,v in pairs(unitDefsTable) do
+				v.unitname = k --jw
 				unitDefs[k] = v
+			end
+		end
+	end
+end
+
+fileList = scandir(path ..'/weapons')
+for n,fileName in ipairs(fileList) do	
+	if fileName:find('.lua$') then
+
+		local weaponDefsTable = openfile2(path ..'/weapons/'.. fileName)
+		if not weaponDefsTable then 
+			print('Error #2 ' .. fileName)
+		else
+			for k,v in pairs(weaponDefsTable) do
+				weaponDefs[k] = v
 			end
 		end
 	end
@@ -181,16 +198,14 @@ end
 
 
 --local morphDefs = openfile2(path .. '/morphdefs/morph_defs.lua')
-local morphDefs = openfile2(path .. '/extradefs/morph_defs.lua')
+local morphDefs = openfile2(path .. '/extradefs/morph_defs.lua') or {}
 
 function trac_html (html)
 	writeml(html)	
 end
 
 function buildPic(buildPicName)
-	--return '<img src="http://zero-k.info/img/unitpics/'.. string.lower(buildPicName) ..'" width="85" height="64" title="'.. buildPicName  ..'" class="buildpic" >'
-	return '<img src="http://packages.springrts.com/zkmanual/unitpics/'.. string.lower(buildPicName) ..'" width="75" height="60" title="'.. buildPicName  ..'" class="buildpic" >'
-		
+	return '<img src="'.. faction_data.path ..'/unitpics/'.. string.lower(buildPicName) ..'" width="80" height="64" title="'.. buildPicName  ..'" class="buildpic" >'	
 end
 
 function getDescription(unitDef, forcelang)
@@ -229,11 +244,12 @@ function printWeapons(unitDef)
 
 	local merw = {}
 
-	local wd = unitDef.weapondefs
+	local wd = unitDef.weapondefs or weaponDefs
 	if not wd then return '' end
 
-	for i, weaponDef in pairs(unitDef.weapons) do
-		local weaponName = string.lower( weaponDef.def )
+	for i, weaponDef in pairs(unitDef.weapons) do 
+	
+		local weaponName = string.lower( unitDef.weapondefs and weaponDef.def or weaponDef.name ) --jw
 		
 		if (wd[weaponName] and wd[weaponName].damage) then
 		
@@ -498,6 +514,7 @@ end
 
 
 function printUnit(unitname, mobile_only)
+	--print('Printing unit:', unitname)
 	
 	local unitDef = unitDefs[unitname]
 	
@@ -519,7 +536,8 @@ function printUnit(unitname, mobile_only)
 		
 		
 		writeml( buildPic(unitDef.buildpic or unitDef.unitname .. '.png') ..nl )
-		writeml("<b>Unitname:</b> " .. unitname .. brbr.. nlnl)
+		writeml('<b>Unitname:</b> <a name="unit-' .. unitDef.name .. '">' .. unitname .. '</a>' .. brbr.. nlnl)
+		writeml('<a href="#toc" style="white-space:nowrap;"> [ ^ ] </a>' .. nl ..br)
 		
 		for _, curlang in ipairs(langNames) do
 			writeml('<div class="'.. curlang ..'_trans"> ' .. br.. nl)
@@ -551,7 +569,7 @@ function printUnit(unitname, mobile_only)
 	
 	local description = getDescription(unitDef)
 	
-	local cost = unitDef.buildcostmetal and (unitDef.buildcostmetal > 0) and unitDef.buildcostmetal or unitDef.buildtime or unitDef.buildcostenergy
+	local cost = unitDef.buildcostmetal and (unitDef.buildcostmetal > 0) and unitDef.buildcostmetal or unitDef.buildtime or unitDef.buildcostenergy or -1
 
 	trac_html(''
 		..'<div style="display:table; width:100%; ">' ..nl
@@ -616,7 +634,7 @@ function printFac(facname, printMobileOnly)
 	if lang == 'all' then
 		
 		writeml( buildPic(curFacDef.buildpic or curFacDef.unitname .. '.png') ..nl )
-		writeml('Factory: <b>' .. facname .. '</b> ' ..nlnl)
+		writeml('Factory: <b>' .. '<a name="fac-'.. curFacDef.name ..'">' .. facname .. '</a></b> ' ..nlnl)
 		
 		for _, curlang in ipairs(langNames) do
 				writeml('<div class="'.. curlang ..'_trans"> ' .. br.. nl)
@@ -671,7 +689,7 @@ function printFaction(intname, image)
 	
 	
 	
-	toc = toc .. name
+	toc = toc .. name .. brbr..nlnl
 	
 	toc = toc .. '<b><a href="#factories">Factories</a></b> <blockquote>'
 
@@ -754,13 +772,14 @@ end
 toc = toc .. '</div>'
 if lang ~= 'featured' then
 	html = toc .. html
-end
+	html = [[
+		<h1>Unit Guide</h1> 
+		<div style="font-size:x-small">Revision: ]].. GetRevision() ..[[</div>
+		<link rel="stylesheet" type="text/css" href="]]..faction_data.path..[[/style.css">
+		]] ..nlnl .. html
 
-html = [[
-	<h1>Unit Guide</h1> 
-	<div style="font-size:x-small">Revision: ]].. GetRevision() ..[[</div>
-	<link rel="stylesheet" type="text/css" href="http://packages.springrts.com/zkmanual/style.css">
-	]] ..nlnl .. html
+
+end
 
 
 if lang == 'all' then
