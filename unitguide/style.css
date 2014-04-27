@@ -1,0 +1,35 @@
+.unitCell{
+    margin-left: 30px; 
+}
+
+.infoCell{
+    padding:5px;
+    margin-bottom: 10px;
+    
+    border-image: url("http://weblobby.springrts.com/test-qtcpp/img/chili/carbon/tech_window.png") 63 fill / 32px repeat repeat;
+}
+
+/* eliminate outer left-right borders on every first and last table cell in row */
+.statstable tr > *:last-child{
+	border-right:medium none;
+}
+ 
+.statstable tr > *:first-child {
+    border-left: medium none;
+}
+ 
+/* eliminate outer top-bottom borders on every cell in first and last row */
+.statstable tr:last-child > * {
+	border-bottom:medium none;
+}
+
+.statstable tr:first-child > * {
+    border-top: medium none;
+}
+
+/* make border itself round */ 
+.statstable {
+	border-radius: 6px;
+}
+
+

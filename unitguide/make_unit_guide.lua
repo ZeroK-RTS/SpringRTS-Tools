@@ -161,6 +161,7 @@ f = io.open(output, 'w')
 
 local html = ''
 local toc = ''
+toc = toc .. '<div class="infoCell">'
 toc = toc .. '<a name="toc"></a>'
 local function writeml(ml)
 	for word in ml:gmatch('<a name="(fac%-[^"]*)"') do 
@@ -188,7 +189,7 @@ end
 
 function buildPic(buildPicName)
 	--return '<img src="http://zero-k.info/img/unitpics/'.. string.lower(buildPicName) ..'" width="85" height="64" title="'.. buildPicName  ..'" class="buildpic" >'
-	return '<img src="http://packages.springrts.com/zkmanual/unitpics/'.. string.lower(buildPicName) ..'" width="85" height="64" title="'.. buildPicName  ..'" class="buildpic" >'
+	return '<img src="http://packages.springrts.com/zkmanual/unitpics/'.. string.lower(buildPicName) ..'" width="75" height="60" title="'.. buildPicName  ..'" class="buildpic" >'
 		
 end
 
@@ -535,7 +536,7 @@ function printUnit(unitname, mobile_only)
 		return
 	end
 	
-	writeml('<blockquote>')
+	writeml('<div class="infoCell unitCell">')
 	
 	local weaponStats = ''
 	local buildPower = ''
@@ -604,9 +605,7 @@ function printUnit(unitname, mobile_only)
 	
 	
 	
-	writeml('<hr />' ..nlnl)
-	
-	writeml('</blockquote>')
+	writeml('</div>')
 	
 end
 
@@ -634,6 +633,7 @@ function printFac(facname, printMobileOnly)
 	else
 
 
+		writeml('<div class="infoCell">' ..nlnl)
 		writeml('<a name="fac-'.. curFacDef.name ..'"></a><h3><a href="#fac-'.. curFacDef.name ..'">'.. curFacDef.name ..'</a></h3>' ..nlnl)
 		writeml("<b>".. getDescription(curFacDef)  .."</b>" ..nlnl .. brbr)	
 		trac_html(
@@ -642,9 +642,11 @@ function printFac(facname, printMobileOnly)
 	
 		
 		writeml(brbr .. '<span class="helptext">' .. getHelpText(curFacDef) .. '</span>' .. nlnl)
-		writeml('<hr />' ..nlnl)
+		
+		writeml('</div>' ..nlnl)
 	end
 
+	
 	for _,unitname in pairs(curFacDef.buildoptions) do
 		printUnit(unitname, printMobileOnly)
 	end
@@ -653,6 +655,8 @@ function printFac(facname, printMobileOnly)
 		writeml('</blockquote>'.. nlnl)
 	end
 	toc = toc .. '</div>'
+	
+	
 end
 
 
@@ -669,12 +673,12 @@ function printFaction(intname, image)
 	
 	toc = toc .. name
 	
-	toc = toc .. '<br /> <b><a href="#factories">Factories</a></b> <blockquote>'
+	toc = toc .. '<b><a href="#factories">Factories</a></b> <blockquote>'
 
 	
 	local printedunitlistkeys = {}
 	if lang ~= 'featured' then
-		writeml('<a name="factories"></a><h3> Factories </h3> ' ..nlnl)
+		writeml('<a name="factories"></a><h2> Factories </h2> ' ..nlnl)
 	end
 	for _, fac in pairs(faclist) do
 		printFac(fac, printMobileOnly[fac])
@@ -705,7 +709,7 @@ function printFaction(intname, image)
 	
 	toc = toc .. '<b><a href="#staticweapons">Static Weapons</a></b>'
 	if lang ~= 'featured' then
-		writeml('<a name="staticweapons"></a><h3> Static Weapons & Defense</h3> ' ..nlnl)
+		writeml('<a name="staticweapons"></a><h2> Static Weapons & Defense</h2> ' ..nlnl)
 	end
 	for _,unitname in pairs(weaponStructs) do	
 		printUnit(unitname)
@@ -714,7 +718,7 @@ function printFaction(intname, image)
 	
 	toc = toc .. '<br /><br /><b><a href="#otherstructures">Other Structures</a></b>'
 	if lang ~= 'featured' then
-		writeml('<a name="otherstructures"></a><h3> Other Structures </h3> ' ..nlnl)
+		writeml('<a name="otherstructures"></a><h2> Other Structures </h2> ' ..nlnl)
 	end
 	for _,unitname in pairs(regularStructs) do	
 		printUnit(unitname)
@@ -747,13 +751,16 @@ end
 
 			
 
-toc = toc .. brbr
+toc = toc .. '</div>'
 if lang ~= 'featured' then
 	html = toc .. html
 end
 
-
-html = '<h1>Unit Guide</h1> ' ..nl .. '<div style="font-size:x-small">Revision: '.. GetRevision() ..'</div> ' ..nlnl .. html
+html = [[
+	<h1>Unit Guide</h1> 
+	<div style="font-size:x-small">Revision: ]].. GetRevision() ..[[</div>
+	<link rel="stylesheet" type="text/css" href="http://packages.springrts.com/zkmanual/style.css">
+	]] ..nlnl .. html
 
 
 if lang == 'all' then
