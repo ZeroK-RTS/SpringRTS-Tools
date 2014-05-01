@@ -1,4 +1,3 @@
--- $Id: fbi2lua.lua 6473 2009-12-28 18:20:53Z jk $
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --
@@ -25,6 +24,13 @@ function widget:GetInfo()
   }
 end
 
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+--[[
+2014-05-01: (CarRepairer) Now adds inline unitdef weapon for explodeAs.
+
+]]
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
@@ -198,14 +204,22 @@ end
 
 local function ProcessWeapons(udName, ud, weaponDefs)
   if (not isstring(udName) or not istable(ud)) then
-    return
+      return
   end
 
   local weapons = ud.weapons
-  if (not istable(weapons)) then
-    return
+  
+  if not istable(weapons) and not ud.explodeas then
+      return
   end
-
+  
+  if not istable(weapons) then
+      weapons = {}
+  end
+  if ud.explodeas then
+      weapons[#weapons+1] = {name=ud.explodeas}
+  end
+  
   local wdMap = {}
 
   for i = 1, 16 do
