@@ -143,7 +143,7 @@ for n,fileName in ipairs(fileList) do
 			print('Error #2 ' .. fileName)
 		else
 			for k,v in pairs(weaponDefsTable) do
-				weaponDefs[k] = v
+				weaponDefs[ k:lower() ] = v
 			end
 		end
 	end
@@ -512,6 +512,58 @@ function PrintRemainingStats(unitDef)
 	
 end
 
+function printUnitMainStats(unitDef)
+	
+	local cost = unitDef.buildcostmetal and (unitDef.buildcostmetal > 0) and unitDef.buildcostmetal or unitDef.buildtime or unitDef.buildcostenergy or -1
+
+	return '<table cellspacing="0" border="1" cellpadding="2" class="statstable" style="display:inline-block; vertical-align:top; " >' ..nl
+		..tableRow('<img src="http://zero-k.info/img/luaui/ibeam.png" width="20" alt="Cost" title="Cost" />', comma_value(cost)) 
+		..tableRow('<img src="http://zero-k.info/img/luaui/commands/Bold/health.png" width="20" alt="Health Points" title="Health Points" />', comma_value(unitDef.maxdamage)) 
+		..(unitDef.maxvelocity and (unitDef.maxvelocity+0) > 0 and tableRow('<img src="http://zero-k.info/img/luaui/draggrip.png" width="20" alt="Speed" title="Speed" />', unitDef.maxvelocity) or '')
+		..'<tr><td colspan="2">' .. PrintRemainingStats(unitDef).. '</tr>'
+	..'</table>'
+end
+
+local function printDeathStats(unitDef)
+	if not unitDef.explodeas then
+		return ''
+	end
+	local weaponName = string.lower( unitDef.explodeas )
+	local weapon = weaponDefs[weaponName] or unitDef.weapondefs and unitDef.weapondefs[weaponName]
+	if not weapon then
+		return ''
+	end
+	
+	
+	local damage = weapon.damage and weapon.damage.default or -1
+	local paraTime = weapon.paralyzetime and tableRow('Stun Time', weapon.paralyzetime, 'class="statsfield"') or ''
+
+	local disp = unitDef.kamikaze and 'inline-block' or 'none'
+	local tableId = 'explosion-'..unitDef.name:gsub('[^%a]', '_')
+	local cells = [[
+			<table cellspacing="0" border="1" cellpadding="2"
+				class="statstable" style="display:]]..disp..[[;
+				vertical-align:top;" id="]]..tableId..[["
+			>
+		]] 
+		.. tableHeader('<img src="http://zero-k.info/img/luaui/dgun.png" width="16" alt="Explosion" title="Explosion" /> ' .. weapon.name ) 
+		.. tableRow('Damage', comma_value(damage), 'class="statsfield"')
+		
+		.. tableRow('Area of Effect', comma_value(weapon.areaofeffect), 'class="statsfield"' )
+		.. paraTime
+		.. '</table>'
+	
+	local deathStats = cells
+	if not unitDef.kamikaze then
+		local js = [[
+			<a href="#" onclick="$('#]]..tableId..[[').css( 'display', 'inline-block'); $(this).hide(); return false;">
+				<img src="http://zero-k.info/img/luaui/dgun.png" width="16" alt="Explosion" title="Explosion" />
+			</a>
+		]]
+		deathStats = js..deathStats
+	end
+	return deathStats
+end
 
 function printUnit(unitname, mobile_only)
 	--print('Printing unit:', unitname)
@@ -561,16 +613,18 @@ function printUnit(unitname, mobile_only)
 	if (unitDef.weapons) then
 		weaponStats = printWeapons(unitDef)
 	end
+	
+	local mainStats = printUnitMainStats(unitDef)
 	--[[
 	if (unitDef.workerTime and unitDef.workerTime ~= 0) then
 		buildPower = tableRow('Buildpower', unitDef.workerTime)
 	end
 	--]]
 	
+	local deathStats = printDeathStats(unitDef)
+	
 	local description = getDescription(unitDef)
 	
-	local cost = unitDef.buildcostmetal and (unitDef.buildcostmetal > 0) and unitDef.buildcostmetal or unitDef.buildtime or unitDef.buildcostenergy or -1
-
 	trac_html(''
 		..'<div style="display:table; width:100%; ">' ..nl
 			..'<div style="display:table-row; ">' ..nl
@@ -585,14 +639,10 @@ function printUnit(unitname, mobile_only)
 				..'</div>' ..nl
 				
 				..'<div style="display:table-cell; text-align:right; vertical-align: top; ">' ..nl
-					..'<div style="float:right">'
-						..weaponStats 
-						..'<table cellspacing="0" border="1" cellpadding="2" class="statstable" style="display:inline-block; vertical-align:top; " >' ..nl
-							..tableRow('<img src="http://zero-k.info/img/luaui/ibeam.png" width="20" alt="Cost" title="Cost" />', comma_value(cost)) 
-							..tableRow('<img src="http://zero-k.info/img/luaui/commands/Bold/health.png" width="20" alt="Health Points" title="Health Points" />', comma_value(unitDef.maxdamage)) 
-							..(unitDef.maxvelocity and (unitDef.maxvelocity+0) > 0 and tableRow('<img src="http://zero-k.info/img/luaui/draggrip.png" width="20" alt="Speed" title="Speed" />', unitDef.maxvelocity) or '')
-							..'<tr><td colspan="2">' .. PrintRemainingStats(unitDef).. '</tr>'
-						..'</table>' ..nl
+					..'<div style="float:right">' ..nlnl
+						..deathStats ..nlnl
+						..weaponStats ..nlnl
+						..mainStats ..nlnl
 					..'</div>'
 				..'</div>' ..nl
 			 ..'</div>'.. nl
@@ -773,6 +823,7 @@ toc = toc .. '</div>'
 if lang ~= 'featured' then
 	html = toc .. html
 	html = [[
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 		<h1>Unit Guide</h1> 
 		<div style="font-size:x-small">Revision: ]].. GetRevision() ..[[</div>
 		<link rel="stylesheet" type="text/css" href="]]..faction_data.path..[[/style.css">
@@ -796,7 +847,9 @@ if lang == 'all' then
 		
 		<html>
 			<head>
+			<!--
 			<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+			-->
 			<script type="text/javascript"> 
 				$(document).ready(function() {
 					$("input[id$=_show]").click(function(){
