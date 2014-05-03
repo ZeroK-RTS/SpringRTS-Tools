@@ -8,6 +8,7 @@
 	</title>
 </head>
 <body>
+<div style="margin:auto; max-width: 800px; position: relative; padding: 4px; background-color: lightgray; " >
 <pre>
 <?
 	$bos = isset( $_POST['bos'] ) ? $_POST['bos'] : '';
@@ -308,7 +309,7 @@ Spring Bos to Lua Converter
 Guaranteed to work!*
 </h2>
 </center>
-<span style="color:red; font-size:xx-small; position:fixed; right:20px; top:10px ">
+<span style="color:red; background-color: white; font-size:5pt; position:absolute; right:20px; top:8px ">
 <pre>
 $$$$$$$$$$$$$$$$$$$$ZZZZZZZZZZZZZOOOOOO 
 $$$$$$$$$$$$$$$$$$$$$ZZZZZZZZZZZZOOOOOO 
@@ -351,11 +352,15 @@ ZZZZZZZZZZZZZZOOOOOOOOOOOOOOOOOOOOO8888
 </form>
 
 <div style="font-size:x-small; ">
-	*Not a guarantee.
-	<span style="right:1px; position:absolute; ">
+	<div style="left:1px; position:absolute; ">
+		*Not a guarantee.
+	</div>
+	<div style="right:1px; position:absolute; ">
 		Written by CarRepairer
-	</span>
+	</div>
+	<br />
 </div>
 
+</div>
 </body>
 </html>
