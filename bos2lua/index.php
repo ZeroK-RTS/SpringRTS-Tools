@@ -267,7 +267,6 @@
 			'+ sfx\1',
 			'sfx\1',
 			
-			'sfxFall', 'sfxSmoke', 'sfxFire', 'sfxExplodeOnHit', 'sfxShatter',
 		);
 		$bos2 = preg_replace($find, $rep, $bos2 );
 		
