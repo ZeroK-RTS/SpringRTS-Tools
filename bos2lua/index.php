@@ -1,3 +1,6 @@
+<?
+////// Bos To Lua script converter by CarRepairer /////
+?>
 <html>
 <head>
 	<title>
@@ -217,6 +220,12 @@
 			'/spin[\s]*(.*)[\s]*around[\s]*(.)-axis[\s]*speed[\s]*<(.*)>/',
 			'/spin[\s]*(.*)[\s]*around[\s]*(.)-axis[\s]*speed[\s]*(.*)/',
 			
+			'/explode[\s]+(.*)[\s]+type[\s]+(.*);/',
+			
+			'/\|[\s]*([^\s]*)/',
+			'/<<<[\s]*([^\s]*)/',
+			
+			
 		);
 		$rep = array(	
 			'StartThread(\1)',
@@ -251,8 +260,20 @@
 			'Move( \1, \2_axis, \3 )',
 			
 			'Spin( \1, \2_axis, \3 )',
+			'Spin( \1, \2_axis, \3 )',
+			
+			'Explode( \1, <<<\2)',
+			
+			'+ sfx\1',
+			'sfx\1',
+			
+			'sfxFall', 'sfxSmoke', 'sfxFire', 'sfxExplodeOnHit', 'sfxShatter',
 		);
 		$bos2 = preg_replace($find, $rep, $bos2 );
+		
+		$find = array( 'sfxFALL', 'sfxSMOKE', 'sfxFIRE', 'sfxEXPLODE_ON_HIT', 'sfxSHATTER', );
+		$rep = array( 'sfxFall', 'sfxSmoke', 'sfxFire', 'sfxExplodeOnHit', 'sfxShatter', );
+		$bos2 = str_replace($find, $rep, $bos2 );
 		
 		$find = '/Move\( (.*), x_axis, (.*), (.*) \)/';
 		$rep = 'Move( \1, x_axis, -\2, \3 )';
@@ -276,8 +297,6 @@
 		return $bos2;
 		
 	}
-	
-	
 	
 	
 ?>
@@ -334,7 +353,7 @@ ZZZZZZZZZZZZZZOOOOOOOOOOOOOOOOOOOOO8888
 
 <div style="font-size:x-small; ">
 	*Not a guarantee.
-	<span style="right:1; position:absolute; ">
+	<span style="right:1px; position:absolute; ">
 		Written by CarRepairer
 	</span>
 </div>
