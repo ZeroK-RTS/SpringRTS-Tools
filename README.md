@@ -1,4 +1,4 @@
-Spring-Tools
+SpringRTS-Tools
 ============
 
 Spring related tools
