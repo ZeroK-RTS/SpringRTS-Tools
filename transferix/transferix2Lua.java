@@ -58,7 +58,7 @@ public class transferix2Lua
 					os.write("\t\t"+name+"={\n");
 					os.write("\t\t\tdescription=\""+lines[1]+"\",\n");
 					os.write("\t\t\thelptext=\""+lines[2]+"\"\n");
-					os.write("\t\t}\n");
+					os.write("\t\t},\n");
 				}
 				else
 				{
