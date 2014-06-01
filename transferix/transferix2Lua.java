@@ -23,6 +23,26 @@ import java.util.logging.Logger;
  */
 public class transferix2Lua
 {
+	static String escapeUTF8(String str)
+	{
+		String esc="";
+		byte[] buf=null;
+		try
+		{
+			buf = str.getBytes("utf-8");
+			for(int i=0;i<buf.length;i++)
+			{
+				int v=(( buf[i]  & 0xFF ));
+				esc+="\\"+Integer.toString(v);
+			}
+		}
+		catch (UnsupportedEncodingException ex)
+		{
+			Logger.getLogger(TranslationConvertor.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		return esc;
+	}
+
 	public static void main(String[] args)
 	{
 		Properties translation=new Properties();
@@ -56,8 +76,8 @@ public class transferix2Lua
 				if(lines.length>=3)
 				{
 					os.write("\t\t"+name+"={\n");
-					os.write("\t\t\tdescription=\""+lines[1]+"\",\n");
-					os.write("\t\t\thelptext=\""+lines[2]+"\"\n");
+					os.write("\t\t\tdescription=\""+escapeUTF8(lines[1])+"\",\n");
+					os.write("\t\t\thelptext=\""+escapeUTF8(lines[2])+"\"\n");
 					os.write("\t\t},\n");
 				}
 				else
