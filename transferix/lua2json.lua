@@ -51,9 +51,9 @@ function getDescription(unitDef)
 	local lang_to_use = lang
 
 	if lang_to_use == 'en' then
-		return unitDef.description or ''
+		return unitDef.description or nil
 	else
-		return unitDef.customparams and unitDef.customparams['description_' .. lang_to_use] or ''
+		return unitDef.customparams and unitDef.customparams['description_' .. lang_to_use] or nil
 	end
 end	
 
@@ -61,7 +61,7 @@ function getHelpText(unitDef)
 	local lang_to_use = lang	
 
 	local suffix = (lang_to_use == 'en') and '' or ('_' .. lang_to_use)	
-	return unitDef.customparams and unitDef.customparams['helptext' .. suffix] or ''
+	return unitDef.customparams and unitDef.customparams['helptext' .. suffix] or nil
 end	
 
 local function loadFromUnitdefs()
