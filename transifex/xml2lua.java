@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package translationconvertor;
+package xml2lua;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -21,7 +21,7 @@ import java.util.logging.Logger;
  *
  * @author egor
  */
-public class transferix2Lua
+public class xml2lua
 {
 	static String escapeUTF8(String str)
 	{
