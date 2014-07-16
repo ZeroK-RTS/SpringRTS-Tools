@@ -110,12 +110,19 @@ end
 
 local function GetRevision()
 	callit = os.tmpname()
-	os.execute("svn info " .. faction_data.svnurl .." >"..callit)
+	
+	--os.execute("svn info " .. faction_data.svnurl .." >"..callit)
+	
+	--os.execute("git rev-list --count HEAD >"..callit)
+	
+	os.execute("date >"..callit)
+	
 	fs = io.open(callit,"r")
 	rv = fs:read("*all")
 	fs:close()
 	os.remove(callit)
-	return rv:match( 'Last Changed Rev:%s*(%d+)' )
+	--return rv:match( 'Last Changed Rev:%s*(%d+)' )
+	return rv
 end
 
 local fileList = scandir(path ..'/units')
@@ -149,7 +156,18 @@ for n,fileName in ipairs(fileList) do
 	end
 end
 
-local langNames = {'en', 'es', 'fr', 'bp', 'fi', 'pl', 'my', 'it', 'de',}
+
+local nonLatinTrans = {}
+fileList = scandir(path ..'/nonlatin')
+for n,fileName in ipairs(fileList) do	
+	if fileName:find('.lua$') then
+		local lang = fileName:gsub('.lua', '')
+		nonLatinTrans[lang] = openfile2(path ..'/nonlatin/'.. fileName)
+	end
+end
+
+
+local langNames = {'en', 'es', 'fr', 'bp', 'fi', 'pl', 'my', 'it', 'de', 'ru', }
 local flags = {
 	en='us',
 	es='es',
@@ -160,7 +178,9 @@ local flags = {
 	pl='pl',
 	my='my',
 	de='de',
+	ru='ru',
 }
+local nonlatin = {ru=1}
 
 function comma_value(amount)
   local formatted = amount
@@ -213,6 +233,9 @@ function getDescription(unitDef, forcelang)
 
 	if lang_to_use == 'en' then
 		return unitDef.description or ''
+	elseif nonLatinTrans[lang_to_use] then
+		local unitTrans = nonLatinTrans[lang_to_use].units[unitDef.unitname]
+		return unitTrans and unitTrans.description or ''
 	else
 		return unitDef.customparams and unitDef.customparams['description_' .. lang_to_use] or ''
 	end
@@ -221,6 +244,12 @@ end
 function getHelpText(unitDef, forcelang)
 	local lang_to_use = forcelang or lang	
 
+	
+	if nonLatinTrans[lang_to_use] then
+		local unitTrans = nonLatinTrans[lang_to_use].units[unitDef.unitname]
+		return unitTrans and unitTrans.helptext or ''
+	end
+	
 	local suffix = (lang_to_use == 'en') and '' or ('_' .. lang_to_use)	
 	return unitDef.customparams and unitDef.customparams['helptext' .. suffix] or ''
 end	
@@ -842,14 +871,14 @@ if lang == 'all' then
 		]]
 	end
 	
+	--fixme: jquery loaded twice
 	html = [[
 		<!DOCTYPE html>
 		
 		<html>
 			<head>
-			<!--
+			
 			<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
-			-->
 			<script type="text/javascript"> 
 				$(document).ready(function() {
 					$("input[id$=_show]").click(function(){
