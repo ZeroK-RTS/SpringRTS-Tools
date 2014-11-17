@@ -477,6 +477,7 @@ function PrintRemainingStats(unitDef)
 		name=1,
 		unitname=1,
 		maxdamage=1,
+		sightdistance=1,
 		description=1,
 		maxvelocity=1,
 		buildpic=1,
@@ -548,6 +549,7 @@ function printUnitMainStats(unitDef)
 	return '<table cellspacing="0" border="1" cellpadding="2" class="statstable" style="display:inline-block; vertical-align:top; " >' ..nl
 		..tableRow('<img src="http://zero-k.info/img/luaui/ibeam.png" width="20" alt="Cost" title="Cost" />', comma_value(cost)) 
 		..tableRow('<img src="http://zero-k.info/img/luaui/commands/Bold/health.png" width="20" alt="Health Points" title="Health Points" />', comma_value(unitDef.maxdamage)) 
+		..tableRow('<img src="http://zero-k.info/img/battles/spec.png" width="20" alt="Sight Distance" title="Sight Distance" />', comma_value(unitDef.sightdistance)) 
 		..(unitDef.maxvelocity and (unitDef.maxvelocity+0) > 0 and tableRow('<img src="http://zero-k.info/img/luaui/draggrip.png" width="20" alt="Speed" title="Speed" />', unitDef.maxvelocity) or '')
 		..'<tr><td colspan="2">' .. PrintRemainingStats(unitDef).. '</tr>'
 	..'</table>'
