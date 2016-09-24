@@ -33,6 +33,10 @@ facs.one = {
 	'striderhub',
 }
 
+local extra_units = {
+	'nebula', 'heavyturret', 'iwin'
+}
+
 local faction_descriptions = {
 	en = {
 		one = '', 
@@ -73,6 +77,7 @@ local faction_data = {
 	staticw = staticw, 
 	faction_descriptions = faction_descriptions, 
 	cons = cons,
+	extra_units = extra_units,
 	printMobileOnly = printMobileOnly,
 	useBuildOptionFile = true,
 	path='http://packages.springrts.com/zkmanual',

@@ -56,7 +56,8 @@ local printedunitlistkeys = {}
 Spring = { 
 	GetModOptions = function() end,
 	GetPlayerList = function() return {}; end,
-	GetModOptions = function() return 'asdf' end
+	GetModOptions = function() return 'asdf' end,
+	Echo = function(...) print(...) end
 }
 
 function lowerkeys(t) --must be before openfile
@@ -158,6 +159,39 @@ for n,fileName in ipairs(fileList) do
 	end
 end
 
+--------------------------------------------------------------------------------
+-- unitdefs_post, weapondefs_post
+--------------------------------------------------------------------------------
+local DO_NOT_INCLUDE = {	-- FIXME HAX
+	["gamedata/modularcomms/unitdefgen.lua"] = true,
+	["gamedata/planetwars/pw_unitdefgen.lua"] = true,
+	["gamedata/planetwars/pw_unitdefgen.lua"] = true,
+}
+
+VFS = {
+	Include = function(subpath)
+		if DO_NOT_INCLUDE[subpath] then
+			return	
+		end
+		return dofile(path .. "/" .. subpath)
+	end,
+	DirList = function() return {} end
+}
+-- synonyms
+UnitDefs = unitDefs
+WeaponDefs = weaponDefs
+DEFS = {
+	unitDefs = unitDefs
+}
+
+-- dummy
+commDefs = {}
+
+dofile(path .. "/gamedata/unitdefs_post.lua")
+dofile(path .. "/gamedata/weapondefs_post.lua")
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 local nonLatinTrans = {}
 --[[
 fileList = scandir(path ..'/nonlatin')
@@ -197,6 +231,9 @@ function comma_value(amount, displayPlusMinus)
 end
 
 local function writeTemplateLine(key, value, indents)
+	if not key or not value then
+		return ""
+	end
 	indents = indents or 0
 	local str = "\n"
 	for i=1,indents do
@@ -206,8 +243,6 @@ local function writeTemplateLine(key, value, indents)
 	return str
 
 end
-
-f = io.open(output, 'w')
 
 --local morphDefs = openfile2(path .. '/morphdefs/morph_defs.lua')
 local morphDefs = openfile2(path .. '/extradefs/morph_defs.lua') or {}
@@ -255,31 +290,30 @@ function printWeaponsTemplates(unitDef)
 
 	local merw = {}
 
-	local wd = unitDef.weapondefs or weaponDefs
+	local wd = weaponDefs
 	if not wd then return '' end
 	
 	local str = ''
 
 	for i, weaponDef in pairs(unitDef.weapons) do 
-	
-		local weaponName = string.lower( unitDef.weapondefs and weaponDef.def or weaponDef.name ) --jw
 		
+		local weaponName = string.lower( unitDef.weapondefs and weaponDef.def or weaponDef.name ) --jw
+		--weaponName = unitDef.unitname .. "_" .. weaponName
 		if (wd[weaponName] and wd[weaponName].damage and wd[weaponName].weapontype:lower() ~= 'shield') then
 		
 			local wsTemp = {}
-			
-			
 			wsTemp.slaveTo = weaponDef.slaveto --fixme - lowercase?
 			if wsTemp.slaveTo then
 				merw[wsTemp.slaveTo] = merw[wsTemp.slaveTo] or {}
 				merw[wsTemp.slaveTo][#(merw[wsTemp.slaveTo])+1] = i
 			end
 			local wdEntry = wd[weaponName]
-			local cp = wdEntry.customParams or {}
+			local cp = wdEntry.customparams or {}
 			
 			wsTemp.wname 			= wdEntry.name or 'NoName Weapon'
 			wsTemp.bestTypeDamage = 0
 			wsTemp.bestTypeDamagew = 0
+			wsTemp.range = cp.truerange or wdEntry.range
 			wsTemp.paralyzer = wdEntry.paralyzer
 			wsTemp.show_projectile_speed = not cp.stats_hide_projectile_speed and not hitscan[wdEntry.weapontype]
 			wsTemp.shieldDamage = cp.damage_vs_shield
@@ -412,11 +446,21 @@ function printWeaponsTemplates(unitDef)
 	end
 	--fixme, check for need of this var
 	local weaponList = weaponStats
-
+	local weaponCounts = {}	-- [weaponName] = count
+	local weaponsPrinted = {}
+	
+	for index,ws in pairs(weaponList) do
+		if not ws.slaveTo then
+			weaponCounts[ws.wname] = (weaponCounts[ws.wname] or 0) + 1
+		end
+	end
+	
 	for index,ws in pairs(weaponList) do
 		--print("Processing weapon " .. ws.wname)
 		local mainweapon = merw and merw[index]
-		if not ws.slaveTo then
+		if weaponsPrinted[ws.wname] then
+			-- do nothing
+		elseif not ws.slaveTo then
 			--local dam = ws.finalDamage
 		
 			if mainweapon then
@@ -431,8 +475,9 @@ function printWeaponsTemplates(unitDef)
 			end
 			
 			if not (ws.wname:find('Fake') or ws.wname:find('fake') ) then
-				str = "\t{{ Infobox zkweapon"
-				str = str .. writeTemplateLine("name", ws.wname, 1)
+				str = str .. "\t{{ Infobox zkweapon"
+				local mult = (weaponCounts[ws.wname] > 1) and (" × " .. weaponCounts[ws.wname]) or ""
+				str = str .. writeTemplateLine("name", ws.wname .. mult, 1)
 				str = str .. writeTemplateLine("damage", ws.damBreakdown or ws.bestTypeDamage, 1)
 				if ws.reloadtime then
 					str = str .. writeTemplateLine("reloadtime", ws.reloadtime, 1)
@@ -490,9 +535,9 @@ function printWeaponsTemplates(unitDef)
 					str = str .. writeTemplateLine("antiair", true, 1)	
 				end
 				str = str .. "\n\t}}"
+				weaponsPrinted[ws.wname] = true
 			end
 		end
-
 	end
 	return str
 --[[
@@ -523,7 +568,7 @@ function printUnitStatsTemplate(unitDef)
 	str = str .. writeTemplateLine("cost", getCost(unitDef))
 	str = str .. writeTemplateLine("hitpoints", unitDef.maxdamage)
 	if unitDef.mass then
-		str = str .. writeTemplateLine("mass", unitDef.mass)
+		str = str .. writeTemplateLine("mass", comma_value(unitDef.mass))
 	end
 	if unitDef.maxvelocity and (unitDef.maxvelocity+0) > 0 then
 		str = str .. writeTemplateLine("movespeed", unitDef.maxvelocity * 30)
@@ -541,7 +586,7 @@ function printUnitStatsTemplate(unitDef)
 		str = str .. writeTemplateLine("sonar", unitDef.sonardistance)
 	end
 	if not (unitDef.canfly or unitDef.cantbetransported) then
-		str = str .. writeTemplateLine("transportable", (((( (unitDef.mass or 0) > 350) or ((unitDef.xsize or 0) > 4) or ((unitDef.zsize or 0) > 4)) and "Heavy") or "Light"))
+		str = str .. writeTemplateLine("transportable", ((((unitDef.mass > 350) or ((unitDef.xsize or 0) > 4) or ((unitDef.zsize or 0) > 4)) and "Heavy") or "Light"))
 	end
 	if unitDef.customparams.pylonrange then
 		str = str .. writeTemplateLine("gridlink", unitDef.customparams.pylonrange)
@@ -551,6 +596,49 @@ function printUnitStatsTemplate(unitDef)
 		str = str .. writeTemplateLine("weapons", printWeaponsTemplates(unitDef))
 	end
 	
+	local abilities = ""
+	if (unitDef.workertime or 0) > 0 then
+		abilities = abilities .. "\n\t" .. "{{ Infobox zkability construction"
+			.. writeTemplateLine("buildpower", unitDef.workerTime, 1)
+			.. "\n\t}}"
+	end
+	if unitDef.cloakcost then
+		abilities = abilities .. "\n\t" .. "{{ Infobox zkability cloak"
+			.. writeTemplateLine("upkeepidle", unitDef.cloakcost, 1)
+			.. writeTemplateLine("upkeepmobile", unitDef.cloakcostmoving, 1)
+			.. writeTemplateLine("decloakradius", unitDef.mincloakdistance, 1)
+		if unitDef.decloakOnFire == false then
+			abilities = abilities .. writeTemplateLine("customdata1", "No decloak while shooting", 1)	
+		end
+		abilities = abilities .. "\n\t}}"	
+	end
+	if unitDef.radardistance or unitDef.radardistancejam or unitDef.customparams.area_cloak_upkeep then
+		abilities = abilities .. "\n\t" .. "{{ Infobox zkability intel"
+		if unitDef.radardistance then
+			abilities = abilities .. writeTemplateLine("radar", unitDef.radardistance, 1)	
+		end
+		if unitDef.radardistancejam then
+			abilities = abilities .. writeTemplateLine("radar", unitDef.radardistancejam, 1)	
+		end
+		if unitDef.customparams.area_cloak_upkeep then
+			abilities = abilities .. writeTemplateLine("energycost", unitDef.customparams.area_cloak_upkeep, 1)	
+		end
+		abilities = abilities .. "\n\t}}"
+	end
+	
+	if abilities ~= "" then
+		str = str .. writeTemplateLine("abilities", abilities)
+	end
+	
+	
+		
+	--[[
+{{ Infobox zkability intel
+| radar =
+| jam =
+| energycost =
+	]]
+		
 	str = str .. "\n}}"
 	
 	return str
@@ -619,7 +707,7 @@ function printUnit(unitname, parentFac)
 	local str = printUnitStatsTemplate(unitDef)
 	
 	-- write intro text
-	str = str .. "The {{PAGENAME}} is a " .. string.lower(getDescription(unitDef, lang))
+	str = str .. "The '''{{PAGENAME}}''' is a " .. string.lower(getDescription(unitDef, lang))
 	if parentFac then
 		local factoryDef = unitDefs[parentFac]
 		if factoryDef then
@@ -658,7 +746,8 @@ function printUnit(unitname, parentFac)
 		writeml(morphstr .. nlnl)
 	end
 	--]]
-	local file = io.open(output .. "/" .. unitname .. ".txt", 'w')
+	local name = string.gsub(unitDef.name, "/", "&#47;")
+	local file = io.open(output .. "/" .. name .. ".txt", 'w')
 	file:write(str)
 	io.close(file)
 	printedunitlistkeys[unitname] = true
@@ -717,7 +806,9 @@ function printFaction(intname, image)
 		printUnit(unitname)
 	end
 		
-
+	for _,unitname in pairs(faction_data.extra_units) do	
+		printUnit(unitname)
+	end
 end
 
 
