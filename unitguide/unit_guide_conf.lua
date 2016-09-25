@@ -34,7 +34,36 @@ facs.one = {
 }
 
 local extra_units = {
-	'nebula', 'heavyturret', 'iwin'
+	'nebula', 'heavyturret', 'iwin', 'wolverine_mine',
+	
+	'chicken',
+	'chickena',
+	'chicken_blimpy',
+	'chickenblobber',
+	'chickenbroodqueen',
+	'chickenc',
+	'chickend',
+	'chicken_digger',
+	'chicken_dodo',
+	'chicken_dragon',
+	'chickenf',
+	'chickenflyerqueen',
+	'chickenlandqueen',
+	'chicken_leaper',
+	'chicken_listener',
+	'chicken_listener_b',
+	'chicken_pigeon',
+	'chickenq',
+	'chickenr',
+	'chicken_rafflesia',
+	'chicken_roc',
+	'chickens',
+	'chicken_shield',
+	'chicken_spidermonkey',
+	'chickenspire',
+	'chicken_sporeshooter',
+	'chicken_tiamat',
+	'chickenwurm',
 }
 
 local faction_descriptions = {

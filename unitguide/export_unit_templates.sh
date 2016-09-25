@@ -7,6 +7,7 @@ mkdir $TMPDIR/extradefs
 EXTRADEFS="$TMPDIR/extradefs"
 mkdir $TMPDIR/markup
 MARKUP="$TMPDIR/markup"
+OUTPUT="/media/histidine/My Book/zkwiki/output"
 
 #cp -r "/media/histidine/228CBE3D8CBE0AF5/Games/Spring/games/zk.sdd/" "$UNITS"
 cp "/media/histidine/228CBE3D8CBE0AF5/Games/Spring/games/zk.sdd/LuaRules/Configs/morph_defs.lua" "$EXTRADEFS/morph_defs.lua"
@@ -16,9 +17,9 @@ cp "/media/histidine/228CBE3D8CBE0AF5/Games/Spring/games/zk.sdd/gamedata/buildop
 
 lua5.3 "/media/histidine/My Book/Games/Spring/SpringRTS-Tools/unitguide/export_unit_templates.lua" $UNITS $MARKUP en
 #recode ISO-8859-1..UTF-8 $MARKUP
-rm -rf "/home/histidine/zkwiki/output"
-mkdir -p "/home/histidine/zkwiki/output"
-cp -r $MARKUP "/home/histidine/zkwiki/output"
+rm -rf "$OUTPUT"
+mkdir -p "$OUTPUT"
+cp -r $MARKUP "$OUTPUT"
 
 rm -rf $TMPDIR
 

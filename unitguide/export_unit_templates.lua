@@ -36,14 +36,47 @@ local function to_string(data, indent)
     return str
 end
 
+local function SplitString(str, sep)
+  local sep, fields = sep or ":", {}
+  local pattern = string.format("([^%s]+)", sep)
+  string.gsub(str, pattern, function(c) fields[#fields+1] = c end)
+  return fields
+end
+
+-- not always correct but better than nothing
+local vowels = {a = true, e = true, i = true, o = true, u = true}
+local function getArticle(text)
+	text = string.lower(text)
+	local firstLetter = string.sub(text, 0, 1)
+	if vowels[firstLetter] then
+		return "an"
+	end
+	return "a"
+end
+
+local function tobool(val)
+  local t = type(val)
+  if (t == 'nil') then
+    return false
+  elseif (t == 'boolean') then
+    return val
+  elseif (t == 'number') then
+    return (val ~= 0)
+  elseif (t == 'string') then
+    return ((val ~= '0') and (val ~= 'false'))
+  end
+  return false
+end
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
 path = arg[1]
 output = arg[2]
 lang = arg[3]
 
 local nl = "\n"
 local nlnl = "\n\n"
-local br = "<br />"
-local brbr = "<br /><br />"
 
 local f = loadfile('./unit_guide_conf.lua')
 local faction_data = f()
@@ -277,16 +310,384 @@ function getHelpText(unitDef, forcelang)
 	return unitDef.customparams and unitDef.customparams['helptext' .. suffix] or ''
 end
 
-
 local hitscan = {
 	BeamLaser = true,
 	LightningCannon = true,
-	AircraftBomb = true,	-- HAX
 }
 
+local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamageIndex, bestTypeDamage)
+	local wd = weaponDefs
+	if not wd then return {} end
+	
+	bestDamage = bestDamage or 0
+	bestDamageIndex = bestDamageIndex or 0
+	bestTypeDamage = bestTypeDamage or 0
+
+	local wsTemp = {}
+	wsTemp.slaveTo = unitWeaponEntry.slaveto --fixme - lowercase?
+	if wsTemp.slaveTo then
+		merw[wsTemp.slaveTo] = merw[wsTemp.slaveTo] or {}
+		merw[wsTemp.slaveTo][#(merw[wsTemp.slaveTo])+1] = i
+	end
+	local wdEntry = wd[weaponName]
+	local cp = wdEntry.customparams or {}
+	
+	--print("Processing weapon " .. wdEntry.name)
+	
+	wsTemp.wname 			= wdEntry.name or 'NoName Weapon'
+	wsTemp.bestTypeDamage = 0
+	wsTemp.bestTypeDamagew = 0
+	wsTemp.range = cp.truerange or wdEntry.range
+	wsTemp.paralyzer = wdEntry.paralyzer
+	wsTemp.show_projectile_speed = not cp.stats_hide_projectile_speed and not hitscan[wdEntry.weapontype]
+	wsTemp.hitscan = hitscan[wdEntry.weapontype]
+	wsTemp.shieldDamage = cp.damage_vs_shield
+	
+	if cp.setunitsonfire then
+		local afterburn_frames = (cp.burntime or (450 * (wdEntry.fireStarter or 0)))
+		wsTemp.afterburn = afterburn_frames/30
+	end
+	
+	if (wdEntry.sprayangle or 0 > 0) then
+		wsTemp.inaccuracy = wdEntry.sprayangle * 90 / 0xafff
+	end
+	
+	if wdEntry.tracks and wdEntry.turnrate > 0 then
+		wsTemp.homing = wdEntry.turnrate * 180 / 32768
+	end
+	
+	if (wdEntry.wobble or 0) > 0 then
+		wsTemp.wobble = wdEntry.wobble * 180 / 32768
+	end
+	
+	if (wdEntry.trajectoryheight or 0) > 0 then
+		wsTemp.arcing = math.atan(wdEntry.trajectoryheight) * 180 / math.pi
+	end
+	
+	if wdEntry.type == "BeamLaser" and wdEntry.beamtime > 0.2 then
+		wsTemp.burstTime = wdEntry.beamtime	
+	end
+	
+	if unitWeaponEntry.onlytargetcategory then
+		wsTemp.aa_only = true
+		local targetcats = SplitString(unitWeaponEntry.onlytargetcategory, " ")
+		for i,cat in pairs(targetcats) do
+			if ((cat ~= "fixedwing") and (cat ~= "gunship")) then
+				wsTemp.aa_only = false
+				break;
+			end
+		end
+	end
+	
+	for unitType, damage in pairs(wdEntry.damage) do
+		damage = tonumber(damage)
+		damage = math.max(damage, 0) --shadow has negative damage, breaks the below logic.
+		
+		if (wsTemp.bestTypeDamage <= (damage+0) and not wsTemp.paralyzer)
+			or (wsTemp.bestTypeDamagew <= (damage+0) and wsTemp.paralyzer)
+			then
+	
+			if wsTemp.paralyzer then
+				wsTemp.bestTypeDamagew = (damage+0)
+			else
+				wsTemp.bestTypeDamage = (damage+0)
+			end
+			
+			wsTemp.burst = wdEntry.burst or 1
+			wsTemp.projectiles = wdEntry.projectiles or 1
+			wsTemp.dam = 0
+			wsTemp.damw = 0
+			
+			if wsTemp.paralyzer then
+				wsTemp.damw = wsTemp.bestTypeDamagew * wsTemp.burst * wsTemp.projectiles
+			else
+				wsTemp.dam = wsTemp.bestTypeDamage * wsTemp.burst * wsTemp.projectiles
+				if wsTemp.projectiles > 1 or wsTemp.burst > 1 then
+					wsTemp.damBreakdown = wsTemp.bestTypeDamage .. ' × ' .. (wsTemp.projectiles * wsTemp.burst)
+				end
+			end
+			
+			if wdEntry.customparams and wdEntry.customparams.extra_damage then
+				wsTemp.dam = wdEntry.customparams.extra_damage * wsTemp.burst * wsTemp.projectiles
+				if wsTemp.projectiles > 1 or wsTemp.burst > 1 then
+					wsTemp.damBreakdown = wdEntry.customparams.extra_damage .. ' × ' .. (wsTemp.projectiles * wsTemp.burst)
+				end
+				wsTemp.bestTypeDamage = wsTemp.dam
+			end
+			
+			if cp.damage_vs_shield then	-- Wolverine
+				wsTemp.dam = tonumber(cp.damage_vs_shield)
+				wsTemp.bestTypeDamage = wsTemp.dam
+			end
+			
+			wsTemp.dps 	= 0
+			wsTemp.dpsw 	= 0
+			
+			if wsTemp.paralyzer then
+				wsTemp.stuntime = wdEntry.paralyzetime
+			end
+			
+			local tempDPS = 0	
+			if wdEntry.reloadtime and wdEntry.reloadtime > 0 then
+				if wsTemp.paralyzer then
+					tempDPS = math.floor(wsTemp.damw/wdEntry.reloadtime + 0.5)
+				else
+					tempDPS = math.floor(wsTemp.dam/wdEntry.reloadtime + 0.5)
+				end
+			end
+			
+			if cp.disarmdamagemult then
+				wsTemp.dpsd = tempDPS * cp.disarmdamagemult
+				if tobool(cp.disarmdamageonly) then
+					wsTemp.dam = 0
+					wsTemp.bestTypeDamage = 0
+				end
+				wsTemp.stuntime = tonumber(cp.disarmtimer)
+			end
+			
+			if cp.timeslow_damagefactor then
+				wsTemp.dpss = tempDPS * cp.timeslow_damagefactor
+				if tobool(cp.timeslow_onlyslow) then
+					wsTemp.dam = 0
+					wsTemp.bestTypeDamage = 0
+				end
+			end
+			
+			if wdEntry.reloadtime and wdEntry.reloadtime > 0 then
+				if wsTemp.paralyzer then
+					wsTemp.dpsw = math.floor(wsTemp.damw/wdEntry.reloadtime + 0.5)
+					if cp.extra_damage then
+						wsTemp.dps = math.floor(wsTemp.dam/wdEntry.reloadtime + 0.5)
+					end
+				else
+					wsTemp.dps = math.floor(wsTemp.dam/wdEntry.reloadtime + 0.5)
+				end
+			end
+			--print('test', unitDef.unitname, wsTemp.wname, bestDamage, bestDamageIndex)
+			if wsTemp.dam > bestDamage then
+				bestDamage = wsTemp.dam	
+				bestDamageIndex = i
+			end
+			if wsTemp.damw > bestDamage then
+				bestDamage = wsTemp.damw
+				bestDamageIndex = i
+			end
+			
+		end
+	end
+	
+	for i,v in pairs(wdEntry) do
+		wsTemp[i] = wsTemp[i] or v		
+	end
+
+	return wsTemp, bestDamage, bestDamageIndex, bestTypeDamage
+end
+
+local function writeCustomDataLine(key, value, count, indents)
+	count = count + 1
+	local str = ""
+	if key then
+		str = writeTemplateLine("customlabel"..count, key, indents) .. writeTemplateLine("customdata"..count, value, indents)
+	else
+		str = writeTemplateLine("special"..count, value, indents)
+	end
+	return str, count
+end
+
+local function printWeaponTemplate(ws, unitDef, mult)
+	local str = "\t{{ Infobox zkweapon"
+	local str2 = ''
+	local mult = (mult > 1) and (" × " .. mult) or ""
+	local numSpecial = 0
+	local numCustom = 0
+	local cp = ws.customparams
+	local udcp = unitDef.customparams
+	
+	str = str .. writeTemplateLine("name", ws.wname .. mult, 1)
+	str = str .. writeTemplateLine("type", ws.weapontype, 1)
+	str = str .. writeTemplateLine("damage", ws.damBreakdown or comma_value(ws.bestTypeDamage), 1)
+	if ws.reloadtime then
+		str = str .. writeTemplateLine("reloadtime", ws.reloadtime, 1)
+	end
+	if ws.dps > 0 then
+		str = str .. writeTemplateLine("dps", ws.dps, 1)
+	end
+	if ws.dpsd then	-- disarm
+		str = str .. writeTemplateLine("disarmdps", ws.dpsd, 1)
+	elseif ws.paralyzer then	-- EMP
+		str = str .. writeTemplateLine("empdps", ws.dpsw, 1)
+	end
+	if ws.dpss then	-- slow
+		str = str .. writeTemplateLine("slowdps", ws.dpss, 1)
+	end
+	
+	local lowerName = ws.wname:lower()
+	if lowerName:find("flamethrower") or lowerName:find("flame thrower") then
+		str = str .. writeTemplateLine("shielddamage", 300, 1)
+	elseif lowerName:find("gauss") then
+		str = str .. writeTemplateLine("shielddamage", 150, 1)
+	end
+	
+	if ws.afterburn then
+		str = str .. writeTemplateLine("afterburn", comma_value(ws.afterburn), 1)
+	end
+	if ws.stuntime then
+		str = str .. writeTemplateLine("stuntime", comma_value(ws.stuntime), 1)
+	end
+	if ws.range then
+		str = str .. writeTemplateLine("range", ws.range, 1)
+	end
+	if ws.areaofeffect and not ws.impactonly then
+		str = str .. writeTemplateLine("aoe", comma_value(ws.areaofeffect/2), 1)
+	end
+	if cp.shield_drain then
+		str2, numCustom = writeCustomDataLine("Shield drain (HP/shot)", cp.shield_drain, numCustom, 1)
+		str = str .. str2
+	end
+	if ws.inaccuracy then
+		str = str .. writeTemplateLine("inaccuracy", comma_value(ws.inaccuracy), 1)
+	end
+	if ws.homing then
+		str = str .. writeTemplateLine("homing", comma_value(ws.homing), 1)
+	end
+	if ws.wobble then
+		str = str .. writeTemplateLine("wobbly", comma_value(ws.wobble), 1)	
+	end
+	if ws.arcing then
+		str = str .. writeTemplateLine("arcing", comma_value(ws.arcing), 1)		
+	end
+	if ws.firing_arc and (ws.firing_arc > -1) then
+		str = str .. writeTemplateLine("firearc", comma_value(360*math.acos(ws.firing_arc)/math.pi), 1)
+	end
+	if ws.burstTime then
+		str = str .. writeTemplateLine("bursttime", ws.burstTime, 1)	
+	end
+	if ws.commandfire then
+		str = str .. writeTemplateLine("manualfire", "Yes", 1)	
+	end
+	if ws.aa_only then
+		str = str .. writeTemplateLine("antiair", "Yes", 1)	
+	end
+	if cp.needs_link then
+		str2, numCustom = writeCustomDataLine("Grid needed", cp.needs_link, numCustom, 1)
+		str = str .. str2
+	end
+	
+	if cp.spawns_name then
+		local spawnDef = unitDefs[cp.spawns_name]
+		str2, numCustom = writeCustomDataLine("Spawns unit", "[["..spawnDef.name.."]]", numCustom, 1)
+		str = str .. str2
+		if cp.spawns_expire then
+			str2, numCustom = writeCustomDataLine("Spawn life (s)", cp.spawns_expire, numCustom, 1)
+			str = str .. str2
+		end
+	end
+
+	if cp.area_damage then
+		local grav = tobool(cp.area_damage_is_impulse)
+		local text = grav and "Gravity well" or "Ground burn"
+
+		if not grav then
+			str2, numCustom = writeCustomDataLine(text .. " DPS", cp.area_damage_dps, numCustom, 1)
+			str = str .. str2
+		end
+		str2, numCustom = writeCustomDataLine(text .. " radius (elmo)", cp.area_damage_radius, numCustom, 1)
+		str = str .. str2
+		str2, numCustom = writeCustomDataLine(text .. " duration (s)", cp.area_damage_duration, numCustom, 1)
+		str = str .. str2
+	end
+
+	if ws.stockpile then
+		local time = (((tonumber(udcp.stockpiletime) or 0) > 0) and tonumber(udcp.stockpiletime) or ws.stockpiletime)
+		str2, numCustom = writeCustomDataLine("Stockpile time (s)", time, numCustom, 1)
+		str = str .. str2
+		if ((not udcp.freestockpile) and ((tonumber(udcp.stockpilecost) or ws.metalcost or 0) > 0)) then
+			local cost = udcp.stockpilecost or ws.metalcost .. " M"
+			str2, numCustom = writeCustomDataLine("Stockpile cost (M)", cost, numCustom, 1)
+			str = str .. str2
+		end
+	end
+	
+	if ws.show_projectile_speed and ws.weaponvelocity then
+		str = str .. writeTemplateLine("projectilespeed", comma_value(ws.weaponvelocity), 1)
+	elseif ws.hitscan then
+		str2, numSpecial = writeCustomDataLine(nil, "Instantly hits", numSpecial, 1)
+		str = str .. str2
+	end
+	if ws.interceptedbyshieldtype == 0 then
+		str2, numSpecial = writeCustomDataLine(nil, "Ignores shields", numSpecial, 1)
+		str = str .. str2
+	end
+	if cp.smoothradius then
+		str2, numSpecial = writeCustomDataLine(nil, "Smooths ground", numSpecial, 1)
+		str = str .. str2
+	end
+	
+	local highTraj = ws.hightrajectory or unitDef.hightrajectory
+	if highTraj == 1 then
+		str2, numSpecial = writeCustomDataLine(nil, "High trajectory", numSpecial, 1)
+		str = str .. str2
+	elseif highTraj == 2 then
+		str2, numSpecial = writeCustomDataLine(nil, "Trajectory toggle", numSpecial, 1)
+		str = str .. str2
+	end
+	
+	if ws.waterWeapon and (ws.type ~= "TorpedoLauncher") then
+		str2, numSpecial = writeCustomDataLine(nil, "Water capable", numSpecial, 1)
+		str = str .. str2
+	end
+	if (not ws.avoidfriendly) and ws.collidefriendly then
+		str2, numSpecial = writeCustomDataLine(nil, "Potential friendly fire", numSpecial, 1)
+		str = str .. str2
+	elseif cp.nofriendlyfire then
+		str2, numSpecial = writeCustomDataLine(nil, "No friendly fire", numSpecial, 1)
+		str = str .. str2
+	end
+	if ws.collideground == false then
+		str2, numSpecial = writeCustomDataLine(nil, "Passes through ground", numSpecial, 1)
+		str = str .. str2
+	end
+	
+	if ws.noexplode then
+		str2, numSpecial = writeCustomDataLine(nil, "Piercing", numSpecial, 1)
+		str = str .. str2
+		if not cp.single_hit then
+			str2, numSpecial = writeCustomDataLine(nil, "Damage increase vs large units", numSpecial, 1)
+			str = str .. str2
+		end
+	end
+
+	if cp.dyndamageexp then
+		str2, numSpecial = writeCustomDataLine(nil, "Damage falls off with range", numSpecial, 1)
+		str = str .. str2
+	end
+
+	-- does anything actually use this?
+	--[[
+	if cp.aim_delay then
+		cells[#cells+1] = ' - Aiming time:'
+		cells[#cells+1] = numformat(tonumber(cp.aim_delay)/1000) .. "s"
+	end
+	]]
+	
+	if (ws.targetmoveerror or 0) > 0 then
+		str2, numSpecial = writeCustomDataLine(nil, "Inaccuracy vs moving targets", numSpecial, 1)
+		str = str .. str2
+	end
+	if ws.targetable and ((ws.targetable == 1) or (ws.targetable == true)) then
+		str2, numSpecial = writeCustomDataLine(nil, "Can be shot down by antinukes", numSpecial, 1)
+		str = str .. str2
+	end
+	
+	str = str .. "\n\t}}"
+	
+	return str
+end
+
+-- note shields are written separately
 function printWeaponsTemplates(unitDef)
 	local weaponStats = {}
-	local bestDamage, bestDamageIndex, bestTypeDamage = 0,0,0
+	local bestDamage, bestDamageIndex, bestTypeDamage = 0,0,0	-- unused apparently
 
 	local merw = {}
 
@@ -295,153 +696,18 @@ function printWeaponsTemplates(unitDef)
 	
 	local str = ''
 
-	for i, weaponDef in pairs(unitDef.weapons) do 
-		
+	for i, weaponDef in pairs(unitDef.weapons or {}) do 
 		local weaponName = string.lower( unitDef.weapondefs and weaponDef.def or weaponDef.name ) --jw
 		--weaponName = unitDef.unitname .. "_" .. weaponName
 		if (wd[weaponName] and wd[weaponName].damage and wd[weaponName].weapontype:lower() ~= 'shield') then
-		
-			local wsTemp = {}
-			wsTemp.slaveTo = weaponDef.slaveto --fixme - lowercase?
-			if wsTemp.slaveTo then
-				merw[wsTemp.slaveTo] = merw[wsTemp.slaveTo] or {}
-				merw[wsTemp.slaveTo][#(merw[wsTemp.slaveTo])+1] = i
-			end
-			local wdEntry = wd[weaponName]
-			local cp = wdEntry.customparams or {}
-			
-			wsTemp.wname 			= wdEntry.name or 'NoName Weapon'
-			wsTemp.bestTypeDamage = 0
-			wsTemp.bestTypeDamagew = 0
-			wsTemp.range = cp.truerange or wdEntry.range
-			wsTemp.paralyzer = wdEntry.paralyzer
-			wsTemp.show_projectile_speed = not cp.stats_hide_projectile_speed and not hitscan[wdEntry.weapontype]
-			wsTemp.shieldDamage = cp.damage_vs_shield
-			
-			if cp.setunitsonfire then
-				local afterburn_frames = (cp.burntime or (450 * (wdEntry.fireStarter or 0)))
-				wsTemp.afterburn = afterburn_frames/30
-			end
-			
-			if (wdEntry.sprayangle or 0 > 0) then
-				wsTemp.inaccuracy = wdEntry.sprayangle * 90 / 0xafff
-			end
-			
-			if wdEntry.tracks and wdEntry.turnrate > 0 then
-				wsTemp.homing = wdEntry.turnrate * 30 * 180 / 32768
-			end
-			
-			if (wdEntry.wobble or 0) > 0 then
-				wsTemp.wobble = wdEntry.wobble * 30 * 180 / 32768
-			end
-			
-			if (wdEntry.trajectoryheight or 0) > 0 then
-				wsTemp.arcing = math.atan(wdEntry.trajectoryheight) * 180 / math.pi
-			end
-			
-			if wdEntry.type == "BeamLaser" and wdEntry.beamtime > 0.2 then
-				wsTemp.burstTime = wdEntry.beamtime	
-			end
-			
-			for unitType, damage in pairs(wdEntry.damage) do
-				
-				damage = math.max(damage, 0) --shadow has negative damage, breaks the below logic.
-				
-				if (wsTemp.bestTypeDamage <= (damage+0) and not wsTemp.paralyzer)
-					or (wsTemp.bestTypeDamagew <= (damage+0) and wsTemp.paralyzer)
-					then
-
-					if wsTemp.paralyzer then
-						wsTemp.bestTypeDamagew = (damage+0)
-					else
-						wsTemp.bestTypeDamage = (damage+0)
-					end
-					
-					wsTemp.burst = wdEntry.burst or 1
-					wsTemp.projectiles = wdEntry.projectiles or 1
-					wsTemp.dam = 0
-					wsTemp.damw = 0
-					
-					if wsTemp.paralyzer then
-						wsTemp.damw = wsTemp.bestTypeDamagew * wsTemp.burst * wsTemp.projectiles
-					else
-						wsTemp.dam = wsTemp.bestTypeDamage * wsTemp.burst * wsTemp.projectiles
-						if wsTemp.projectiles > 1 or wsTemp.burst > 1 then
-							wsTemp.damBreakdown = wsTemp.bestTypeDamage .. ' × ' .. (wsTemp.projectiles * wsTemp.burst)
-						end
-					end
-					
-					-- [[
-					if wdEntry.customparams and wdEntry.customparams.extra_damage then
-						wsTemp.dam = wdEntry.customparams.extra_damage * wsTemp.burst * wsTemp.projectiles
-						if wsTemp.projectiles > 1 or wsTemp.burst > 1 then
-							wsTemp.damBreakdown = wdEntry.customparams.extra_damage .. ' × ' .. (wsTemp.projectiles * wsTemp.burst)
-						end
-					end
-					--]]
-					
-					wsTemp.dps 				= 0
-					wsTemp.dpsw 				= 0
-					
-					if wsTemp.paralyzer then
-						wsTemp.stuntime = wdEntry.paralyzetime
-					end
-					
-					local tempDPS = 0	
-					if wsTemp.reloadtime and wsTemp.reloadtime > 0 then
-						tempDPS = math.floor(wsTemp.dam/wdEntry.reloadtime + 0.5)
-					end
-					
-					if cp.disarmdamagemult then
-						wsTemp.dpsd = tempDPS * cp.disarmdamagemult
-						if (cp.disarmdamageonly == "1") then
-							wsTemp.dam = 0
-						end
-						wsTemp.stuntime = tonumber(cp.disarmtimer)
-					end
-					
-					if cp.timeslow_damagefactor then
-						wsTemp.dpss = tempDPS * cp.timeslow_damagefactor
-						if (cp.timeslow_onlyslow == "1") then
-							wsTemp.dam = 0
-						end
-					end
-					
-					if wdEntry.reloadtime and wdEntry.reloadtime > 0 then
-						if wsTemp.paralyzer then
-							wsTemp.dpsw = math.floor(wsTemp.damw/wdEntry.reloadtime + 0.5)
-							if cp.extra_damage then
-								wsTemp.dps = math.floor(wsTemp.dam/wdEntry.reloadtime + 0.5)
-							end
-						else
-							wsTemp.dps = math.floor(wsTemp.dam/wdEntry.reloadtime + 0.5)
-						end
-					end
-					--print('test', unitDef.unitname, wsTemp.wname, bestDamage, bestDamageIndex)
-					if wsTemp.dam > bestDamage then
-						bestDamage = wsTemp.dam	
-						bestDamageIndex = i
-					end
-					if wsTemp.damw > bestDamage then
-						bestDamage = wsTemp.damw
-						bestDamageIndex = i
-					end
-					
-				end
-			end
-			
-			for i,v in pairs(wdEntry) do
-				wsTemp[i] = wsTemp[i] or v		
-			end
-			
+			local wsTemp
+			wsTemp, bestDamage, bestDamageIndex, bestTypeDamage = processWeapon(weaponDef, weaponName, bestDamage, bestDamageIndex, bestTypeDamage)	
 			-- may be broken
 			if not wsTemp.wname then
 				print("BAD unit ", unitDef.unitname) return ''
 			else
 				weaponStats[i] = wsTemp
 			end 
-			
-
 		end
 	end
 	--fixme, check for need of this var
@@ -475,85 +741,94 @@ function printWeaponsTemplates(unitDef)
 			end
 			
 			if not (ws.wname:find('Fake') or ws.wname:find('fake') ) then
-				str = str .. "\t{{ Infobox zkweapon"
-				local mult = (weaponCounts[ws.wname] > 1) and (" × " .. weaponCounts[ws.wname]) or ""
-				str = str .. writeTemplateLine("name", ws.wname .. mult, 1)
-				str = str .. writeTemplateLine("damage", ws.damBreakdown or ws.bestTypeDamage, 1)
-				if ws.reloadtime then
-					str = str .. writeTemplateLine("reloadtime", ws.reloadtime, 1)
-				end
-				str = str .. writeTemplateLine("dps", ws.dps, 1)
-				if ws.paralyzer then
-					str = str .. writeTemplateLine("empdps", ws.dpsw, 1)
-				end
-				if ws.dpss then
-					str = str .. writeTemplateLine("slowdps", ws.dpss, 1)
-				end
-				if ws.dpsd then
-					str = str .. writeTemplateLine("disarmdps", ws.dpsd, 1)
-				end
-				if ws.shieldDamage then
-					str = str .. writeTemplateLine("shielddamage", ws.shieldDamage, 1)
-				end
-				if ws.afterburn then
-					str = str .. writeTemplateLine("afterburn", ws.afterburn, 1)
-				end
-				if ws.stuntime then
-					str = str .. writeTemplateLine("stuntime", ws.stuntime, 1)
-				end
-				if ws.range then
-					str = str .. writeTemplateLine("range", ws.range, 1)
-				end
-				if ws.areaofeffect then
-					str = str .. writeTemplateLine("aoe", ws.areaofeffect/2, 1)
-				end
-				if ws.show_projectile_speed then
-					str = str .. writeTemplateLine("projectilespeed", ws.weaponvelocity, 1)
-				end
-				if ws.inaccuracy then
-					str = str .. writeTemplateLine("inaccuracy", math.floor(ws.inaccuracy), 1)
-				end
-				if ws.homing then
-					str = str .. writeTemplateLine("homing", comma_value(ws.homing), 1)
-				end
-				if ws.wobble then
-					str = str .. writeTemplateLine("wobbly", comma_value(ws.wobble), 1)	
-				end
-				if ws.arcing then
-					str = str .. writeTemplateLine("arcing", comma_value(ws.arcing), 1)		
-				end
-				if ws.firing_arc and (ws.firing_arc > -1) then
-					str = str .. writeTemplateLine("firearc", comma_value(360*math.acos(ws.firing_arc)/math.pi), 1)
-				end
-				if ws.burstTime then
-					str = str .. writeTemplateLine("bursttime", ws.burstTime, 1)	
-				end
-				if ws.manualFire then
-					str = str .. writeTemplateLine("manualfire", true, 1)	
-				end
-				if ws.aa_only then
-					str = str .. writeTemplateLine("antiair", true, 1)	
-				end
-				str = str .. "\n\t}}"
+				str = str .. "\n" .. printWeaponTemplate(ws, unitDef, weaponCounts[ws.wname])
 				weaponsPrinted[ws.wname] = true
 			end
 		end
 	end
+	
+	-- write death explosion if needed
+	if unitDef.kamikaze or tobool(unitDef.customparams.stats_show_death_explosion) then
+		local weaponName = unitDef.explodeas
+		if wd[weaponName] then
+			local ws = processWeapon({}, weaponName)	
+			str = str .. "\n" .. printWeaponTemplate(ws, unitDef, 1)
+		else
+			--print("SOMETHING WRONG HERE", unitDef.name, weaponName)
+		end
+	end
 	return str
---[[
-{{ Infobox zkweapon
+	--[[
+	{{ Infobox zkweapon
+	
+	<!-- leave blank for no, put anything for yes -->
+	| wateronly =
+	
+	<!-- 1-9 available for each -->
+	| customlabel1 =
+	| customdata1 = 
+	| special1 = 
+	
+	| specialheadercolour = 
+	]]
+end
 
-<!-- leave blank for no, put anything for yes -->
-| wateronly =
+local function GetShieldRegenDrain(wd)
+	local shieldRegen = wd.shieldpowerregen
+	if shieldRegen == 0 and wd.customparams and wd.customparams.shield_rate then
+		shieldRegen = wd.customparams.shield_rate
+	end
+	
+	local shieldDrain = wd.shieldpowerregenenergy
+	if shieldDrain == 0 and wd.customparams and wd.customparams.shield_drain then
+		shieldDrain = wd.customparams.shield_drain
+	end
+	return shieldRegen, shieldDrain
+end
 
-<!-- 1-9 available for each -->
-| customlabel1 =
-| customdata1 = 
-| special1 = 
-
-| specialheadercolour = 
-]]
-
+function printShields(unitDef)
+	local wd = weaponDefs
+	if not wd then return '' end
+	if not unitDef.weapons then return '' end
+		
+	local str = ''
+	local shieldStats = {}
+	for i, weaponDef in pairs(unitDef.weapons) do 
+		local shieldName = string.lower( unitDef.weapondefs and weaponDef.def or weaponDef.name ) --jw
+		local shieldDef = wd[shieldName]
+		--weaponName = unitDef.unitname .. "_" .. weaponName
+		if (shieldDef and shieldDef.weapontype:lower() == 'shield') then
+			local ssTemp = {}
+			ssTemp.name = shieldDef.name
+			ssTemp.shield = true
+			ssTemp.shieldpower = shieldDef.shieldpower
+			ssTemp.shieldpowerregen, ssTemp.shieldregenenergy = GetShieldRegenDrain(shieldDef)
+			ssTemp.shieldradius = shieldDef.shieldradius
+			
+			-- may be broken
+			if not ssTemp.name then
+				print("BAD unit ", unitDef.unitname) return ''
+			else
+				shieldStats[i] = ssTemp
+			end
+			for i,v in pairs(shieldDef) do
+				ssTemp[i] = ssTemp[i] or v		
+			end
+		end
+	end
+	
+	for index,ss in pairs(shieldStats) do
+		if not (ss.name:find('Fake') or ss.name:find('fake') ) then
+			str = str .. "\n\t" .. "{{ Infobox zkability shield"
+				.. writeTemplateLine("name", ss.name, 1)
+				.. writeTemplateLine("strength", ss.shieldpower, 1)
+				.. writeTemplateLine("regen", ss.shieldpowerregen, 1)
+				.. writeTemplateLine("regencost", ss.shieldregenenergy, 1)
+				.. writeTemplateLine("radius", ss.shieldradius, 1)
+				.. "\n\t}}"
+		end
+	end
+	return str
 end
 
 local function getCost(unitDef)
@@ -561,57 +836,80 @@ local function getCost(unitDef)
 end
 
 function printUnitStatsTemplate(unitDef)
+	local cp = unitDef.customparams
+	local isBuilding = not unitDef.maxvelocity or tonumber(unitDef.maxvelocity) < 0.1
+	
 	local str = "{{ Infobox zkunit"
 	str = str .. writeTemplateLine("name", unitDef.name)
+	str = str .. writeTemplateLine("defname", unitDef.unitname)
 	str = str .. writeTemplateLine("description", getDescription(unitDef, lang))
 	str = str .. writeTemplateLine("image", buildPic(unitDef.buildpic or unitDef.unitname .. '.png'))
 	str = str .. writeTemplateLine("cost", getCost(unitDef))
 	str = str .. writeTemplateLine("hitpoints", unitDef.maxdamage)
-	if unitDef.mass then
-		str = str .. writeTemplateLine("mass", comma_value(unitDef.mass))
-	end
-	if unitDef.maxvelocity and (unitDef.maxvelocity+0) > 0 then
-		str = str .. writeTemplateLine("movespeed", unitDef.maxvelocity * 30)
-	end
-	if unitDef.turnrate then
-		str = str .. writeTemplateLine("turnrate", comma_value(unitDef.turnrate * 30 * 360 / 65536))
+	
+	if not isBuilding then
+		if unitDef.mass then
+			str = str .. writeTemplateLine("mass", comma_value(unitDef.mass))
+		end
+		str = str .. writeTemplateLine("movespeed", comma_value(unitDef.maxvelocity * 30))
+		if unitDef.turnrate then
+			str = str .. writeTemplateLine("turnrate", comma_value(unitDef.turnrate * 30 * 360 / 65536))
+		end
 	end
 	
 	local energy = (unitDef.energymake or 0) + ((unitDef.energyuse or 0) < 0 and -unitDef.energyuse or 0)
-	if energy > 0 then
+	if energy ~= 0 then
 		str = str .. writeTemplateLine("energy", energy)
 	end
 	str = str .. writeTemplateLine("sight", unitDef.sightdistance)
 	if unitDef.sonardistance then
 		str = str .. writeTemplateLine("sonar", unitDef.sonardistance)
 	end
-	if not (unitDef.canfly or unitDef.cantbetransported) then
+	if not (unitDef.canfly or unitDef.cantbetransported or isBuilding) then
 		str = str .. writeTemplateLine("transportable", ((((unitDef.mass > 350) or ((unitDef.xsize or 0) > 4) or ((unitDef.zsize or 0) > 4)) and "Heavy") or "Light"))
 	end
-	if unitDef.customparams.pylonrange then
-		str = str .. writeTemplateLine("gridlink", unitDef.customparams.pylonrange)
+	if cp.pylonrange then
+		str = str .. writeTemplateLine("gridlink", cp.pylonrange)
 	end
 	
-	if (unitDef.weapons) then
-		str = str .. writeTemplateLine("weapons", printWeaponsTemplates(unitDef))
+	if (unitDef.weapons or unitDef.kamikaze) then
+		local weapons = printWeaponsTemplates(unitDef)
+		if weapons ~= '' then
+			str = str .. writeTemplateLine("weapons", weapons)
+		end
 	end
 	
+	-- write abilities
 	local abilities = ""
+	-- builder
 	if (unitDef.workertime or 0) > 0 then
 		abilities = abilities .. "\n\t" .. "{{ Infobox zkability construction"
-			.. writeTemplateLine("buildpower", unitDef.workerTime, 1)
+			.. writeTemplateLine("buildpower", unitDef.workertime, 1)
 			.. "\n\t}}"
 	end
-	if unitDef.cloakcost then
+	-- cloak
+	if unitDef.cloakcost or cp.idle_cloak then
 		abilities = abilities .. "\n\t" .. "{{ Infobox zkability cloak"
-			.. writeTemplateLine("upkeepidle", unitDef.cloakcost, 1)
-			.. writeTemplateLine("upkeepmobile", unitDef.cloakcostmoving, 1)
-			.. writeTemplateLine("decloakradius", unitDef.mincloakdistance, 1)
+		if (unitDef.cloakcost or 0) > 0 then
+			abilities = abilities ..  writeTemplateLine("upkeepidle", unitDef.cloakcost, 1)
+				.. writeTemplateLine("upkeepmobile", unitDef.cloakcostmoving, 1)
+		elseif cp.idle_cloak then
+			abilities = abilities ..  writeTemplateLine("customdata1", "Only when idle", 1)
+				.. writeTemplateLine("customdata2", "Free and automated", 1)
+		end
+		abilities = abilities .. writeTemplateLine("decloakradius", unitDef.mincloakdistance, 1)
 		if unitDef.decloakOnFire == false then
 			abilities = abilities .. writeTemplateLine("customdata1", "No decloak while shooting", 1)	
 		end
-		abilities = abilities .. "\n\t}}"	
+		abilities = abilities .. "\n\t}}"
 	end
+	-- shield
+	local shields = printShields(unitDef)
+	if shield ~= '' then
+		abilities = abilities .. shields	
+	end
+	
+	-- radar/jammer
 	if unitDef.radardistance or unitDef.radardistancejam or unitDef.customparams.area_cloak_upkeep then
 		abilities = abilities .. "\n\t" .. "{{ Infobox zkability intel"
 		if unitDef.radardistance then
@@ -625,76 +923,111 @@ function printUnitStatsTemplate(unitDef)
 		end
 		abilities = abilities .. "\n\t}}"
 	end
+	-- jump
+	if tobool(cp.canjump) then
+		abilities = abilities .. "\n\t" .. "{{ Infobox zkability jump"
+			.. writeTemplateLine("range", cp.jump_range, 1)
+			.. writeTemplateLine("reload", cp.jump_reload, 1)
+			.. writeTemplateLine("speed", cp.jump_speed, 1)
+			.. writeTemplateLine("midairjump", tobool(cp.jump_from_midair) and "Yes" or "No", 1)
+		abilities = abilities .. "\n\t}}"
+	end
+	-- regen
+	if (unitDef.idletime < 1800) or (cp.amph_regen) or (cp.armored_regen) then
+		abilities = abilities .. "\n\t" .. "{{ Infobox zkability regen"
+		if unitDef.idletime < 1800 then
+			if unitDef.idletime > 0 then
+				abilities = abilities .. writeTemplateLine("idleregen", cp.idle_regen, 1)
+				abilities = abilities .. writeTemplateLine("timetoenable", unitDef.idletime / 30, 1)
+			else
+				abilities = abilities .. writeTemplateLine("combatregen", cp.idle_regen, 1)
+			end
+		end
+		if cp.amph_regen then
+			abilities = abilities .. writeTemplateLine("waterregen", cp.amph_regen, 1)
+			abilities = abilities .. writeTemplateLine("atdepth", cp.amph_submerged_at, 1)
+		end
+		if cp.armored_regen then
+			abilities = abilities .. writeTemplateLine("customlabel1", "Closed regen (HP/s)", 1)
+			abilities = abilities .. writeTemplateLine("customdata1", cp.armored_regen, 1)
+		end
+		abilities = abilities .. "\n\t}}"
+	end
+	-- morph
+	if cp.morphto then
+		local to = unitDefs[cp.morphto]
+		local cost = to.buildtime - unitDef.buildtime
+		if cost < 0 then cost = 0 end
+		abilities = abilities .. "\n\t" .. "{{ Infobox zkability morph"
+			.. writeTemplateLine("to", "[[" .. to.name .. "]]", 1)
+			.. writeTemplateLine("cost", cost, 1)
+			.. writeTemplateLine("time", cp.morphtime, 1)
+			.. writeTemplateLine("disabled", tobool(cp.combatmorph) and "No" or "Yes", 1)
+		abilities = abilities .. "\n\t}}"
+	end
+	-- armored
+	if (unitDef.damagemodifier or 1) < 1 then
+		abilities = abilities .. "\n\t" .. "{{ Infobox zkability armored"
+			.. writeTemplateLine("reduction", comma_value((1-unitDef.damagemodifier)*100) .. '%', 1)
+		if cp.force_close then
+			abilities = abilities .. writeTemplateLine("special1", "Forced for " .. cp.force_close .. "s on damage" , 1)
+		end
+		abilities = abilities .. "\n\t}}"
+	end
+	
+	-- custom abilities
+	local miscAble = ""
+	do
+		local num = 1
+		if cp.ismex then
+			miscAble = miscAble .. writeTemplateLine("customdata".. num, "Extracts metal", 1)
+			num = num + 1
+		end
+		if unitDef.stealth then
+			miscAble = miscAble .. writeTemplateLine("customdata".. num, "Invisible to radar", 1)
+			num = num + 1
+		end
+		if tobool(cp.fireproof) then
+			miscAble = miscAble .. writeTemplateLine("customdata".. num, "Immunity to afterburn", 1)
+			num = num + 1
+		end
+		if tobool(cp.dontfireatradarcommand) then
+			miscAble = miscAble .. writeTemplateLine("customdata".. num, "Can ignore unidentified targets", 1)
+			num = num + 1
+		end
+		if (unitDef.selfdestructcountdown or 5) <= 1 then
+			miscAble = miscAble .. writeTemplateLine("customdata".. num, "Instant self-destruction", 1)
+			num = num + 1
+		end
+		-- doesn't work and I cba to parse the yardmap
+		--if unitDef.needgeo then
+		--	miscAble = miscAble .. writeTemplateLine("customdata".. num, "Requires thermal vent to build", 1)
+		--	num = num + 1
+		--end
+		
+	end
+	if miscAble ~= '' then
+		abilities = abilities .. "\n\t" .. "{{ Infobox zkability line" .. miscAble .. "\n\t}}"
+	end
 	
 	if abilities ~= "" then
 		str = str .. writeTemplateLine("abilities", abilities)
 	end
-	
-	
-		
-	--[[
-{{ Infobox zkability intel
-| radar =
-| jam =
-| energycost =
-	]]
 		
 	str = str .. "\n}}"
 	
 	return str
 end
 
-local function printDeathStats(unitDef)
-	if not unitDef.explodeas then
-		return ''
-	end
-	local weaponName = string.lower( unitDef.explodeas )
-	local weapon = weaponDefs[weaponName] or unitDef.weapondefs and unitDef.weapondefs[weaponName]
-	if not weapon then
-		return ''
-	end
-	
-	
-	local damage = weapon.damage and weapon.damage.default or -1
-	local paraTime = weapon.paralyzetime and tableRow('Stun Time', weapon.paralyzetime, 'class="statsfield"') or ''
-
-	local disp = unitDef.kamikaze and 'inline-block' or 'none'
-	local tableId = 'explosion-'..unitDef.name:gsub('[^%a]', '_')
-	local cells = [[
-			<table cellspacing="0" border="1" cellpadding="2"
-				class="statstable" style="display:]]..disp..[[;
-				vertical-align:top;" id="]]..tableId..[["
-			>
-		]] 
-		.. tableHeader('<img src="http://zero-k.info/img/luaui/dgun.png" width="16" alt="Explosion" title="Explosion" /> ' .. weapon.name ) 
-		.. tableRow('Damage', comma_value(damage), 'class="statsfield"')
-		
-		.. tableRow('Area of Effect', comma_value(weapon.areaofeffect), 'class="statsfield"' )
-		.. paraTime
-		.. '</table>'
-	
-	local deathStats = cells
-	if not unitDef.kamikaze then
-		local js = [[
-			<a href="#" onclick="$('#]]..tableId..[[').css( 'display', 'inline-block'); $(this).hide(); return false;">
-				<img src="http://zero-k.info/img/luaui/dgun.png" width="16" alt="Explosion" title="Explosion" />
-			</a>
-		]]
-		deathStats = js..deathStats
-	end
-	return deathStats
-end
-
 function printUnit(unitname, parentFac)
 	if printedunitlistkeys[unitname] then
 		return	
 	end
-	print('Printing unit:', unitname)
+	--print('Printing unit:', unitname)
 	
 	local unitDef = unitDefs[unitname]
 	
 	if not unitDef then return false; end
-	
 	
 	if not unitDef.unitname then 
 		--return false; 
@@ -703,49 +1036,50 @@ function printUnit(unitname, parentFac)
 		--return false;
 	end
 	
-	-- write template
-	local str = printUnitStatsTemplate(unitDef)
+	local isBuilding = not unitDef.maxvelocity or tonumber(unitDef.maxvelocity) < 0.1
+	local isFac = isBuilding and (unitDef.workertime or 0) > 0
 	
+	local str = ''
 	-- write intro text
-	str = str .. "The '''{{PAGENAME}}''' is a " .. string.lower(getDescription(unitDef, lang))
+	local desc = ''
+	if isFac then
+		desc = "factory that produces " .. SplitString(string.lower(getDescription(unitDef, lang)), ",")[1]
+	else
+		desc = string.lower(getDescription(unitDef, lang))
+		desc = string.gsub(desc, " %- ", " that ")
+	end
+	local article = getArticle(desc)
+	str = str .. "The '''{{PAGENAME}}''' is " .. article .. " " .. desc
+	if unitname:find("chicken") then
+		str = str .. " chicken"
+	end
 	if parentFac then
 		local factoryDef = unitDefs[parentFac]
 		if factoryDef then
-			str = str .. " built from the [[" .. factoryDef.name .. "]]." 
+			str = str .. " from the [[" .. factoryDef.name .. "]]."
 		end
 	else
 		str = str .. "."	
 	end
+	-- write template
+	str = str .. printUnitStatsTemplate(unitDef)
 	
 	-- write description
-	str = str .. "\n\n==Description==" .. "\n" .. getHelpText(unitDef, lang)
-	
-	-- write infobox
-	str = str .. "\n\n{{Navbox units}}"
-	
-
-	--[[
-	writeml('<span class="helptext"> '.. getHelpText(unitDef) .. '</span>' .. nlnl .. brbr)
-	
-	local morphs = morphDefs[unitDef.unitname]
-	if morphs then
-		local morphstr = '<span class="morphs"> Morphs to: '
-		if morphs.into then
-			local unitDef = unitDefs[morphs.into]
-			local cost = ' (' .. (morphs.rank and morphs.rank ~= 0 and (morphs.rank .. ' Rank, ') or '') .. (morphs.time or '0') .. 's)'
-			morphstr = morphstr .. '<a href="#unit-' .. unitDef.name .. '">' .. unitDef.name .. '</a>' .. cost .. ', '
-		else
-			for k,v in ipairs(morphs) do
-				local unitDef = unitDefs[v.into]
-				local cost = ' (' .. (v.rank and v.rank ~= 0 and (v.rank .. ' Rank, ') or '') .. (v.time or '0') .. 's)'
-				morphstr = morphstr .. '<a href="#unit-' .. unitDef.name .. '">' .. unitDef.name .. '</a>' ..  cost .. ', '
+	str = str .. "==Description==" .. "\n" .. getHelpText(unitDef, lang)
+	if isFac then
+		str = str .. "\n\nThe " .. unitDef.name .. " builds:"
+		for _,unitname in pairs(unitDef.buildoptions) do
+			if not (unitname:find("dynhub")) then
+				str = str .. "\n* [[" .. unitDefs[unitname].name .. "]]"
 			end
 		end
-		morphstr = morphstr:sub(1,-3) -- remove final ", "
-		morphstr = morphstr .. '</span>'
-		writeml(morphstr .. nlnl)
 	end
-	--]]
+	
+	-- write navbox
+	if isBuilding then str = str .. "\n\n{{Navbox buildings}}"
+	else str = str .. "\n\n{{Navbox units}}"
+	end
+	
 	local name = string.gsub(unitDef.name, "/", "&#47;")
 	local file = io.open(output .. "/" .. name .. ".txt", 'w')
 	file:write(str)
@@ -758,8 +1092,10 @@ function printFac(facname, printMobileOnly)
 	curFacDef = unitDefs[facname]
 	printUnit(facname)
 
-	for _,unitname in pairs(curFacDef.buildoptions) do
-		printUnit(unitname, facname)
+	if facname ~= "armcsa" then
+		for _,unitname in pairs(curFacDef.buildoptions) do
+			printUnit(unitname, facname)
+		end
 	end
 end
 
