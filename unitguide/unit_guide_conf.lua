@@ -34,7 +34,10 @@ facs.one = {
 }
 
 local extra_units = {
-	'nebula', 'heavyturret', 'iwin', 'wolverine_mine',
+	'nebula', 'heavyturret', 'iwin', 'amgeo',
+	'hoverskirm', 'bomberassault', 'bomberskirm', 'bomberstrike', 'subscout', 'destroyer', 'assaultcruiser', 'hoversonic', 'hoverskirm', 
+	'attackdrone', 'battledrone', 'fighterdrone',
+	'wolverine_mine', 'tele_beacon',
 	
 	'chicken',
 	'chickena',
@@ -53,7 +56,7 @@ local extra_units = {
 	'chicken_listener',
 	'chicken_listener_b',
 	'chicken_pigeon',
-	'chickenq',
+	'chickenlandqueen',
 	'chickenr',
 	'chicken_rafflesia',
 	'chicken_roc',
@@ -64,7 +67,10 @@ local extra_units = {
 	'chicken_sporeshooter',
 	'chicken_tiamat',
 	'chickenwurm',
+	'roost'
 }
+
+local ignore = {}
 
 local faction_descriptions = {
 	en = {
@@ -107,6 +113,7 @@ local faction_data = {
 	faction_descriptions = faction_descriptions, 
 	cons = cons,
 	extra_units = extra_units,
+	ignore = ignore,
 	printMobileOnly = printMobileOnly,
 	useBuildOptionFile = true,
 	path='http://packages.springrts.com/zkmanual',

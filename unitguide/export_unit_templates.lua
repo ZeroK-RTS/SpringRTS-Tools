@@ -284,6 +284,7 @@ function buildPic(buildPicName)
 	return faction_data.path ..'/unitpics/'.. string.lower(buildPicName)	
 end
 
+-- FIXME: read from JSON with i18n library
 function getDescription(unitDef, forcelang)
 	local lang_to_use = forcelang or lang
 
@@ -344,7 +345,7 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 	wsTemp.shieldDamage = cp.damage_vs_shield
 	
 	if cp.setunitsonfire then
-		local afterburn_frames = (cp.burntime or (450 * (wdEntry.fireStarter or 0)))
+		local afterburn_frames = (cp.burntime or (450 * 0.01 * (wdEntry.firestarter or 0)))
 		wsTemp.afterburn = afterburn_frames/30
 	end
 	
@@ -371,12 +372,17 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 	if unitWeaponEntry.onlytargetcategory then
 		wsTemp.aa_only = true
 		local targetcats = SplitString(unitWeaponEntry.onlytargetcategory, " ")
+		if #targetcats == 0 then
+			wsTemp.aa_only = false
+		end
 		for i,cat in pairs(targetcats) do
-			if ((cat ~= "fixedwing") and (cat ~= "gunship")) then
+			cat = string.lower(cat)
+			if (cat ~= "fixedwing") and (cat ~= "gunship") and (cat ~= "satellite") then
 				wsTemp.aa_only = false
 				break;
 			end
 		end
+		--if wsTemp.aa_only then print("AA only", wsTemp.wname, unitWeaponEntry.onlytargetcategory) end
 	end
 	
 	for unitType, damage in pairs(wdEntry.damage) do
@@ -391,6 +397,10 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 				wsTemp.bestTypeDamagew = (damage+0)
 			else
 				wsTemp.bestTypeDamage = (damage+0)
+			end
+			
+			if cp.statsdamage then
+				wsTemp.bestTypeDamage = tonumber(cp.statsdamage)
 			end
 			
 			wsTemp.burst = wdEntry.burst or 1
@@ -577,7 +587,7 @@ local function printWeaponTemplate(ws, unitDef, mult)
 		local spawnDef = unitDefs[cp.spawns_name]
 		str2, numCustom = writeCustomDataLine("Spawns unit", "[["..spawnDef.name.."]]", numCustom, 1)
 		str = str .. str2
-		if cp.spawns_expire then
+		if tonumber(cp.spawns_expire) and tonumber(cp.spawns_expire) > 0 then
 			str2, numCustom = writeCustomDataLine("Spawn life (s)", cp.spawns_expire, numCustom, 1)
 			str = str .. str2
 		end
@@ -585,7 +595,7 @@ local function printWeaponTemplate(ws, unitDef, mult)
 
 	if cp.area_damage then
 		local grav = tobool(cp.area_damage_is_impulse)
-		local text = grav and "Gravity well" or "Ground burn"
+		local text = grav and "Gravity Well" or "Ground Burn"
 
 		if not grav then
 			str2, numCustom = writeCustomDataLine(text .. " DPS", cp.area_damage_dps, numCustom, 1)
@@ -849,7 +859,10 @@ function printUnitStatsTemplate(unitDef)
 	
 	if not isBuilding then
 		if unitDef.mass then
-			str = str .. writeTemplateLine("mass", comma_value(unitDef.mass))
+			local mass = unitDef.mass
+			if mass < 999999 then
+				str = str .. writeTemplateLine("mass", comma_value(unitDef.mass))
+			end
 		end
 		str = str .. writeTemplateLine("movespeed", comma_value(unitDef.maxvelocity * 30))
 		if unitDef.turnrate then
@@ -916,7 +929,7 @@ function printUnitStatsTemplate(unitDef)
 			abilities = abilities .. writeTemplateLine("radar", unitDef.radardistance, 1)	
 		end
 		if unitDef.radardistancejam then
-			abilities = abilities .. writeTemplateLine("radar", unitDef.radardistancejam, 1)	
+			abilities = abilities .. writeTemplateLine("jam", unitDef.radardistancejam, 1)	
 		end
 		if unitDef.customparams.area_cloak_upkeep then
 			abilities = abilities .. writeTemplateLine("energycost", unitDef.customparams.area_cloak_upkeep, 1)	
@@ -1023,6 +1036,9 @@ function printUnit(unitname, parentFac)
 	if printedunitlistkeys[unitname] then
 		return	
 	end
+	if faction_data.ignore[unitname] then
+		return
+	end
 	--print('Printing unit:', unitname)
 	
 	local unitDef = unitDefs[unitname]
@@ -1037,21 +1053,22 @@ function printUnit(unitname, parentFac)
 	end
 	
 	local isBuilding = not unitDef.maxvelocity or tonumber(unitDef.maxvelocity) < 0.1
-	local isFac = isBuilding and (unitDef.workertime or 0) > 0
+	local isFac = isBuilding and #(unitDef.buildoptions or {}) > 0
 	
 	local str = ''
 	-- write intro text
 	local desc = ''
 	if isFac then
-		desc = "factory that produces " .. SplitString(string.lower(getDescription(unitDef, lang)), ",")[1]
+		desc = "factory that " .. SplitString(string.lower(getDescription(unitDef, lang)), ",")[1]
 	else
 		desc = string.lower(getDescription(unitDef, lang))
 		desc = string.gsub(desc, " %- ", " that ")
+		desc = string.gsub(desc, ", builds at %d.-%d- m/s", "")
 	end
 	local article = getArticle(desc)
 	str = str .. "The '''{{PAGENAME}}''' is " .. article .. " " .. desc
 	if unitname:find("chicken") then
-		str = str .. " chicken"
+		str = str .. " [[Chicken Defense|chicken]]"
 	end
 	if parentFac then
 		local factoryDef = unitDefs[parentFac]
