@@ -1,3 +1,6 @@
+local exportAsJson = false
+local infoboxOnly = true	-- only for mediawiki format; json is always infobox-only
+
 local function to_string(data, indent)
     local str = ""
 
@@ -263,7 +266,7 @@ function comma_value(amount, displayPlusMinus)
   	return formatted
 end
 
-local function writeTemplateLine(key, value, indents)
+local function writeTemplateLine(key, value, indents, dataType)
 	if not key or not value then
 		return ""
 	end
@@ -272,9 +275,32 @@ local function writeTemplateLine(key, value, indents)
 	for i=1,indents do
 		str = str .. "\t"		
 	end
-	str = str .. "| " .. key .. " = " .. value
+	if exportAsJson then
+		if dataType == "table" then
+			str = str .. "\"" .. key .. "\" : {" .. value .. "\n},"
+		elseif dataType == "list" then	
+			str = str .. "\"" .. key .. "\" : [" .. value .. "\n],"
+		elseif tonumber(str) ~= nil then
+			str = str .. "\"" .. key .. "\" : " .. value .. ","
+		else
+			str = str .. "\"" .. key .. "\" : \"" .. value .. "\","
+		end
+	else
+		str = str .. "| " .. key .. " = " .. value
+	end
 	return str
+end
 
+local function writeHeaderLine(text)
+	if exportAsJson then
+		return "\"" .. text .. "\":{"
+	else
+		return	"{{ " .. text
+	end
+end
+
+local function writeClosingLine()
+	return "\n\t" .. (exportAsJson and "}" or "}}")
 end
 
 --local morphDefs = openfile2(path .. '/morphdefs/morph_defs.lua')
@@ -410,6 +436,9 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 			
 			if wsTemp.paralyzer then
 				wsTemp.damw = wsTemp.bestTypeDamagew * wsTemp.burst * wsTemp.projectiles
+				if wsTemp.projectiles > 1 or wsTemp.burst > 1 then
+					wsTemp.damwBreakdown = wsTemp.bestTypeDamagew .. ' × ' .. (wsTemp.projectiles * wsTemp.burst)
+				end
 			else
 				wsTemp.dam = wsTemp.bestTypeDamage * wsTemp.burst * wsTemp.projectiles
 				if wsTemp.projectiles > 1 or wsTemp.burst > 1 then
@@ -506,6 +535,10 @@ end
 
 local function printWeaponTemplate(ws, unitDef, mult)
 	local str = "\t{{ Infobox zkweapon"
+	if exportAsJson then
+		str = "{"
+	end
+	
 	local str2 = ''
 	local mult = (mult > 1) and (" × " .. mult) or ""
 	local numSpecial = 0
@@ -517,18 +550,20 @@ local function printWeaponTemplate(ws, unitDef, mult)
 	str = str .. writeTemplateLine("type", ws.weapontype, 1)
 	str = str .. writeTemplateLine("damage", ws.damBreakdown or comma_value(ws.bestTypeDamage), 1)
 	if ws.reloadtime then
-		str = str .. writeTemplateLine("reloadtime", ws.reloadtime, 1)
+		str = str .. writeTemplateLine("reloadtime", comma_value(ws.reloadtime), 1)
 	end
 	if ws.dps > 0 then
-		str = str .. writeTemplateLine("dps", ws.dps, 1)
+		str = str .. writeTemplateLine("dps", comma_value(ws.dps), 1)
 	end
 	if ws.dpsd then	-- disarm
-		str = str .. writeTemplateLine("disarmdps", ws.dpsd, 1)
+		--str = str .. writeTemplateLine("disarmdamage", ws.damwBreakdown or comma_value(ws.bestTypeDamagew))
+		str = str .. writeTemplateLine("disarmdps", comma_value(ws.dpsd), 1)
 	elseif ws.paralyzer then	-- EMP
-		str = str .. writeTemplateLine("empdps", ws.dpsw, 1)
+		str = str .. writeTemplateLine("empdamage", ws.damwBreakdown or comma_value(ws.bestTypeDamagew), 1)
+		str = str .. writeTemplateLine("empdps", comma_value(ws.dpsw), 1)
 	end
 	if ws.dpss then	-- slow
-		str = str .. writeTemplateLine("slowdps", ws.dpss, 1)
+		str = str .. writeTemplateLine("slowdps", comma_value(ws.dpss), 1)
 	end
 	
 	local lowerName = ws.wname:lower()
@@ -585,10 +620,10 @@ local function printWeaponTemplate(ws, unitDef, mult)
 	
 	if cp.spawns_name then
 		local spawnDef = unitDefs[cp.spawns_name]
-		str2, numCustom = writeCustomDataLine("Spawns unit", "[["..spawnDef.name.."]]", numCustom, 1)
+		str2, numCustom = writeCustomDataLine("Spawns Unit", "[["..spawnDef.name.."]]", numCustom, 1)
 		str = str .. str2
 		if tonumber(cp.spawns_expire) and tonumber(cp.spawns_expire) > 0 then
-			str2, numCustom = writeCustomDataLine("Spawn life (s)", cp.spawns_expire, numCustom, 1)
+			str2, numCustom = writeCustomDataLine("Spawn Life (s)", cp.spawns_expire, numCustom, 1)
 			str = str .. str2
 		end
 	end
@@ -689,7 +724,7 @@ local function printWeaponTemplate(ws, unitDef, mult)
 		str = str .. str2
 	end
 	
-	str = str .. "\n\t}}"
+	str = str .. writeClosingLine()
 	
 	return str
 end
@@ -750,7 +785,7 @@ function printWeaponsTemplates(unitDef)
 				end
 			end
 			
-			if not (ws.wname:find('Fake') or ws.wname:find('fake') ) then
+			if not (ws.wname:find('Fake') or ws.wname:find('fake') or ws.wname:find('Bogus')) then
 				str = str .. "\n" .. printWeaponTemplate(ws, unitDef, weaponCounts[ws.wname])
 				weaponsPrinted[ws.wname] = true
 			end
@@ -829,13 +864,13 @@ function printShields(unitDef)
 	
 	for index,ss in pairs(shieldStats) do
 		if not (ss.name:find('Fake') or ss.name:find('fake') ) then
-			str = str .. "\n\t" .. "{{ Infobox zkability shield"
+			str = str .. "\n\t" .. writeHeaderLine("Infobox zkability shield")
 				.. writeTemplateLine("name", ss.name, 1)
 				.. writeTemplateLine("strength", ss.shieldpower, 1)
 				.. writeTemplateLine("regen", ss.shieldpowerregen, 1)
 				.. writeTemplateLine("regencost", ss.shieldregenenergy, 1)
 				.. writeTemplateLine("radius", ss.shieldradius, 1)
-				.. "\n\t}}"
+				.. writeClosingLine()
 		end
 	end
 	return str
@@ -849,7 +884,7 @@ function printUnitStatsTemplate(unitDef)
 	local cp = unitDef.customparams
 	local isBuilding = not unitDef.maxvelocity or tonumber(unitDef.maxvelocity) < 0.1
 	
-	local str = "{{ Infobox zkunit"
+	local str = exportAsJson and "{" or "{{ Infobox zkunit"
 	str = str .. writeTemplateLine("name", unitDef.name)
 	str = str .. writeTemplateLine("defname", unitDef.unitname)
 	str = str .. writeTemplateLine("description", getDescription(unitDef, lang))
@@ -858,19 +893,24 @@ function printUnitStatsTemplate(unitDef)
 	str = str .. writeTemplateLine("hitpoints", unitDef.maxdamage)
 	
 	if not isBuilding then
-		if unitDef.mass then
-			local mass = unitDef.mass
-			if mass < 999999 then
-				str = str .. writeTemplateLine("mass", comma_value(unitDef.mass))
-			end
+		-- screw mass
+		--[[
+		local mass = unitDef.mass
+		if mass and (mass < 999999) then
+			print("Unit " .. unitDef.name .. " has mass " .. mass)
+			str = str .. writeTemplateLine("mass", comma_value(mass))
 		end
+		]]
 		str = str .. writeTemplateLine("movespeed", comma_value(unitDef.maxvelocity * 30))
 		if unitDef.turnrate then
 			str = str .. writeTemplateLine("turnrate", comma_value(unitDef.turnrate * 30 * 360 / 65536))
 		end
 	end
 	
-	local energy = (unitDef.energymake or 0) + ((unitDef.energyuse or 0) < 0 and -unitDef.energyuse or 0)
+	local energy = (unitDef.customparams.income_energy or 0)
+	if (ud.customparams.upkeep_energy or 0) > 0 then
+		energy = energy - ud.customparams.upkeep_energy
+	end
 	if energy ~= 0 then
 		str = str .. writeTemplateLine("energy", energy)
 	end
@@ -888,7 +928,7 @@ function printUnitStatsTemplate(unitDef)
 	if (unitDef.weapons or unitDef.kamikaze) then
 		local weapons = printWeaponsTemplates(unitDef)
 		if weapons ~= '' then
-			str = str .. writeTemplateLine("weapons", weapons)
+			str = str .. writeTemplateLine("weapons", weapons, nil, "list")
 		end
 	end
 	
@@ -896,13 +936,13 @@ function printUnitStatsTemplate(unitDef)
 	local abilities = ""
 	-- builder
 	if (unitDef.workertime or 0) > 0 then
-		abilities = abilities .. "\n\t" .. "{{ Infobox zkability construction"
+		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability construction")
 			.. writeTemplateLine("buildpower", unitDef.workertime, 1)
-			.. "\n\t}}"
+			.. writeClosingLine()
 	end
 	-- cloak
 	if unitDef.cloakcost or cp.idle_cloak then
-		abilities = abilities .. "\n\t" .. "{{ Infobox zkability cloak"
+		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability cloak")
 		if (unitDef.cloakcost or 0) > 0 then
 			abilities = abilities ..  writeTemplateLine("upkeepidle", unitDef.cloakcost, 1)
 				.. writeTemplateLine("upkeepmobile", unitDef.cloakcostmoving, 1)
@@ -914,7 +954,7 @@ function printUnitStatsTemplate(unitDef)
 		if unitDef.decloakOnFire == false then
 			abilities = abilities .. writeTemplateLine("customdata1", "No decloak while shooting", 1)	
 		end
-		abilities = abilities .. "\n\t}}"
+		abilities = abilities .. writeClosingLine()
 	end
 	-- shield
 	local shields = printShields(unitDef)
@@ -924,7 +964,7 @@ function printUnitStatsTemplate(unitDef)
 	
 	-- radar/jammer
 	if unitDef.radardistance or unitDef.radardistancejam or unitDef.customparams.area_cloak_upkeep then
-		abilities = abilities .. "\n\t" .. "{{ Infobox zkability intel"
+		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability intel")
 		if unitDef.radardistance then
 			abilities = abilities .. writeTemplateLine("radar", unitDef.radardistance, 1)	
 		end
@@ -934,20 +974,20 @@ function printUnitStatsTemplate(unitDef)
 		if unitDef.customparams.area_cloak_upkeep then
 			abilities = abilities .. writeTemplateLine("energycost", unitDef.customparams.area_cloak_upkeep, 1)	
 		end
-		abilities = abilities .. "\n\t}}"
+		abilities = abilities .. writeClosingLine()
 	end
 	-- jump
 	if tobool(cp.canjump) then
-		abilities = abilities .. "\n\t" .. "{{ Infobox zkability jump"
+		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability jump")
 			.. writeTemplateLine("range", cp.jump_range, 1)
 			.. writeTemplateLine("reload", cp.jump_reload, 1)
 			.. writeTemplateLine("speed", cp.jump_speed, 1)
 			.. writeTemplateLine("midairjump", tobool(cp.jump_from_midair) and "Yes" or "No", 1)
-		abilities = abilities .. "\n\t}}"
+		abilities = abilities .. writeClosingLine()
 	end
 	-- regen
 	if (unitDef.idletime < 1800) or (cp.amph_regen) or (cp.armored_regen) then
-		abilities = abilities .. "\n\t" .. "{{ Infobox zkability regen"
+		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability regen")
 		if unitDef.idletime < 1800 then
 			if unitDef.idletime > 0 then
 				abilities = abilities .. writeTemplateLine("idleregen", cp.idle_regen, 1)
@@ -964,28 +1004,28 @@ function printUnitStatsTemplate(unitDef)
 			abilities = abilities .. writeTemplateLine("customlabel1", "Closed regen (HP/s)", 1)
 			abilities = abilities .. writeTemplateLine("customdata1", cp.armored_regen, 1)
 		end
-		abilities = abilities .. "\n\t}}"
+		abilities = abilities .. writeClosingLine()
 	end
 	-- morph
 	if cp.morphto then
 		local to = unitDefs[cp.morphto]
 		local cost = to.buildtime - unitDef.buildtime
 		if cost < 0 then cost = 0 end
-		abilities = abilities .. "\n\t" .. "{{ Infobox zkability morph"
+		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability morph")
 			.. writeTemplateLine("to", "[[" .. to.name .. "]]", 1)
 			.. writeTemplateLine("cost", cost, 1)
 			.. writeTemplateLine("time", cp.morphtime, 1)
 			.. writeTemplateLine("disabled", tobool(cp.combatmorph) and "No" or "Yes", 1)
-		abilities = abilities .. "\n\t}}"
+		abilities = abilities .. writeClosingLine()
 	end
 	-- armored
 	if (unitDef.damagemodifier or 1) < 1 then
-		abilities = abilities .. "\n\t" .. "{{ Infobox zkability armored"
+		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability armored")
 			.. writeTemplateLine("reduction", comma_value((1-unitDef.damagemodifier)*100) .. '%', 1)
 		if cp.force_close then
 			abilities = abilities .. writeTemplateLine("special1", "Forced for " .. cp.force_close .. "s on damage" , 1)
 		end
-		abilities = abilities .. "\n\t}}"
+		abilities = abilities .. writeClosingLine()
 	end
 	
 	-- custom abilities
@@ -1020,14 +1060,14 @@ function printUnitStatsTemplate(unitDef)
 		
 	end
 	if miscAble ~= '' then
-		abilities = abilities .. "\n\t" .. "{{ Infobox zkability line" .. miscAble .. "\n\t}}"
+		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability line") .. miscAble .. writeClosingLine()
 	end
 	
 	if abilities ~= "" then
-		str = str .. writeTemplateLine("abilities", abilities)
+		str = str .. writeTemplateLine("abilities", abilities, nil, "table")
 	end
 		
-	str = str .. "\n}}"
+	str = str .. (exportAsJson and "\n}" or "\n}}")
 	
 	return str
 end
@@ -1057,48 +1097,53 @@ function printUnit(unitname, parentFac)
 	
 	local str = ''
 	-- write intro text
-	local desc = ''
-	if isFac then
-		desc = "factory that " .. SplitString(string.lower(getDescription(unitDef, lang)), ",")[1]
-	else
-		desc = string.lower(getDescription(unitDef, lang))
-		desc = string.gsub(desc, " %- ", " that ")
-		desc = string.gsub(desc, ", builds at %d.-%d- m/s", "")
-	end
-	local article = getArticle(desc)
-	str = str .. "The '''{{PAGENAME}}''' is " .. article .. " " .. desc
-	if unitname:find("chicken") then
-		str = str .. " [[Chicken Defense|chicken]]"
-	end
-	if parentFac then
-		local factoryDef = unitDefs[parentFac]
-		if factoryDef then
-			str = str .. " from the [[" .. factoryDef.name .. "]]."
+	if not (exportAsJson or infoboxOnly) then
+		local desc = ''
+		if isFac then
+			desc = "factory that " .. SplitString(string.lower(getDescription(unitDef, lang)), ",")[1]
+		else
+			desc = string.lower(getDescription(unitDef, lang))
+			desc = string.gsub(desc, " %- ", " that ")
+			desc = string.gsub(desc, ", builds at %d.-%d- m/s", "")
 		end
-	else
-		str = str .. "."	
+		local article = getArticle(desc)
+		str = str .. "The '''{{PAGENAME}}''' is " .. article .. " " .. desc
+		if unitname:find("chicken") then
+			str = str .. " [[Chicken Defense|chicken]]"
+		end
+		if parentFac then
+			local factoryDef = unitDefs[parentFac]
+			if factoryDef then
+				str = str .. " from the [[" .. factoryDef.name .. "]]."
+			end
+		else
+			str = str .. "."	
+		end
 	end
 	-- write template
-	str = str .. printUnitStatsTemplate(unitDef)
+	str = str .. printUnitStatsTemplate(unitDef, isJson)
 	
-	-- write description
-	str = str .. "==Description==" .. "\n" .. getHelpText(unitDef, lang)
-	if isFac then
-		str = str .. "\n\nThe " .. unitDef.name .. " builds:"
-		for _,unitname in pairs(unitDef.buildoptions) do
-			if not (unitname:find("dynhub")) then
-				str = str .. "\n* [[" .. unitDefs[unitname].name .. "]]"
+	if not (exportAsJson or infoboxOnly) then
+		-- write description
+		str = str .. "==Description==" .. "\n" .. getHelpText(unitDef, lang)
+		if isFac then
+			str = str .. "\n\nThe " .. unitDef.name .. " builds:"
+			for _,unitname in pairs(unitDef.buildoptions) do
+				if not (unitname:find("dynhub")) then
+					str = str .. "\n* [[" .. unitDefs[unitname].name .. "]]"
+				end
 			end
 		end
-	end
-	
-	-- write navbox
-	if isBuilding then str = str .. "\n\n{{Navbox buildings}}"
-	else str = str .. "\n\n{{Navbox units}}"
+		
+		-- write navbox
+		if isBuilding then str = str .. "\n\n{{Navbox buildings}}"
+		else str = str .. "\n\n{{Navbox units}}"
+		end
 	end
 	
 	local name = string.gsub(unitDef.name, "/", "&#47;")
-	local file = io.open(output .. "/" .. name .. ".txt", 'w')
+	local ext = exportAsJson and ".json" or ".txt"
+	local file = io.open(output .. "/" .. name .. ext, 'w')
 	file:write(str)
 	io.close(file)
 	printedunitlistkeys[unitname] = true
