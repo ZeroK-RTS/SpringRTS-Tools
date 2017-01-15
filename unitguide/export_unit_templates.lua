@@ -908,8 +908,8 @@ function printUnitStatsTemplate(unitDef)
 	end
 	
 	local energy = (unitDef.customparams.income_energy or 0)
-	if (ud.customparams.upkeep_energy or 0) > 0 then
-		energy = energy - ud.customparams.upkeep_energy
+	if (unitDef.customparams.upkeep_energy or 0) > 0 then
+		energy = energy - unitDef.customparams.upkeep_energy
 	end
 	if energy ~= 0 then
 		str = str .. writeTemplateLine("energy", energy)
