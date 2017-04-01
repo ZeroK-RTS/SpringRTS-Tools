@@ -33,6 +33,45 @@ facs.one = {
 	'striderhub',
 }
 
+local extra_units = {
+	'nebula', 'heavyturret', 'iwin', 'amgeo',
+	'hoverskirm', 'bomberassault', 'bomberskirm', 'bomberstrike', 'subscout', 'destroyer', 'assaultcruiser', 'hoversonic', 'hoverskirm', 
+	'attackdrone', 'battledrone', 'fighterdrone',
+	'wolverine_mine', 'tele_beacon',
+	
+	'chicken',
+	'chickena',
+	'chicken_blimpy',
+	'chickenblobber',
+	'chickenbroodqueen',
+	'chickenc',
+	'chickend',
+	'chicken_digger',
+	'chicken_dodo',
+	'chicken_dragon',
+	'chickenf',
+	'chickenflyerqueen',
+	'chickenlandqueen',
+	'chicken_leaper',
+	'chicken_listener',
+	'chicken_listener_b',
+	'chicken_pigeon',
+	'chickenlandqueen',
+	'chickenr',
+	'chicken_rafflesia',
+	'chicken_roc',
+	'chickens',
+	'chicken_shield',
+	'chicken_spidermonkey',
+	'chickenspire',
+	'chicken_sporeshooter',
+	'chicken_tiamat',
+	'chickenwurm',
+	'roost'
+}
+
+local ignore = {}
+
 local faction_descriptions = {
 	en = {
 		one = '', 
@@ -73,6 +112,8 @@ local faction_data = {
 	staticw = staticw, 
 	faction_descriptions = faction_descriptions, 
 	cons = cons,
+	extra_units = extra_units,
+	ignore = ignore,
 	printMobileOnly = printMobileOnly,
 	useBuildOptionFile = true,
 	path='http://packages.springrts.com/zkmanual',
