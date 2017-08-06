@@ -96,6 +96,22 @@ Spring = {
 	Echo = function(...) print(...) end
 }
 
+local DO_NOT_INCLUDE = {	-- FIXME HAX
+	["gamedata/modularcomms/unitdefgen.lua"] = true,
+	["gamedata/planetwars/pw_unitdefgen.lua"] = true,
+	["gamedata/planetwars/pw_unitdefgen.lua"] = true,
+}
+
+VFS = {
+	Include = function(subpath)
+		if DO_NOT_INCLUDE[subpath] then
+			return	
+		end
+		return dofile(path .. "/" .. subpath)
+	end,
+	DirList = function() return {} end
+}
+
 function lowerkeys(t) --must be before openfile
 	local tn = {}
 	for i,v in pairs(t) do
@@ -198,36 +214,50 @@ end
 --------------------------------------------------------------------------------
 -- unitdefs_post, weapondefs_post
 --------------------------------------------------------------------------------
-local DO_NOT_INCLUDE = {	-- FIXME HAX
-	["gamedata/modularcomms/unitdefgen.lua"] = true,
-	["gamedata/planetwars/pw_unitdefgen.lua"] = true,
-	["gamedata/planetwars/pw_unitdefgen.lua"] = true,
-}
-
-VFS = {
-	Include = function(subpath)
-		if DO_NOT_INCLUDE[subpath] then
-			return	
-		end
-		return dofile(path .. "/" .. subpath)
-	end,
-	DirList = function() return {} end
-}
 -- synonyms
 UnitDefs = unitDefs
+UnitDefNames = UnitDefs
 WeaponDefs = weaponDefs
 DEFS = {
 	unitDefs = unitDefs
 }
+local UnitDefsByFakeID = {}
 
+do
+	local count = 0
+	for name,data in pairs(UnitDefNames) do
+		count = count + 1
+		data.id = count
+		UnitDefsByFakeID[data.id] = data
+	end
+end
 -- dummy
 commDefs = {}
 
 dofile(path .. "/gamedata/unitdefs_post.lua")
 dofile(path .. "/gamedata/weapondefs_post.lua")
 
+local droneCarriers = {}
+do
+	-- use this to supply drone_defs.lua with the fake unit IDs and other stuff it needs
+	local temp = UnitDefs
+	UnitDefs = UnitDefsByFakeID
+	for i=1,#UnitDefs do
+		UnitDefs[i].health = UnitDefs[i].maxdamage	
+	end
+	
+	droneCarriers = dofile(path .. "/LuaRules/Configs/drone_defs.lua")
+	
+	UnitDefs = temp
+	for i=1,#UnitDefs do
+		UnitDefs[i].health = nil
+	end
+end
+
 --------------------------------------------------------------------------------
+-- Text stuff
 --------------------------------------------------------------------------------
+
 local nonLatinTrans = {}
 --[[
 fileList = scandir(path ..'/nonlatin')
@@ -363,9 +393,9 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 	
 	wsTemp.wname 			= wdEntry.name or 'NoName Weapon'
 	wsTemp.bestTypeDamage = 0
-	wsTemp.bestTypeDamagew = 0
+	wsTemp.bestTypeDamageW = 0
 	wsTemp.range = cp.truerange or wdEntry.range
-	wsTemp.paralyzer = wdEntry.paralyzer
+	wsTemp.paralyzer = wdEntry.paralyzer or ((wdEntry.paralyzetime or 0) > 0)
 	wsTemp.show_projectile_speed = not cp.stats_hide_projectile_speed and not hitscan[wdEntry.weapontype]
 	wsTemp.hitscan = hitscan[wdEntry.weapontype]
 	wsTemp.shieldDamage = cp.damage_vs_shield
@@ -416,11 +446,11 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 		damage = math.max(damage, 0) --shadow has negative damage, breaks the below logic.
 		
 		if (wsTemp.bestTypeDamage <= (damage+0) and not wsTemp.paralyzer)
-			or (wsTemp.bestTypeDamagew <= (damage+0) and wsTemp.paralyzer)
+			or (wsTemp.bestTypeDamageW <= (damage+0) and wsTemp.paralyzer)
 			then
 	
-			if wsTemp.paralyzer then
-				wsTemp.bestTypeDamagew = (damage+0)
+			if wsTemp.paralyzer and not wdEntry.customparams.extra_damage then
+				wsTemp.bestTypeDamageW = (damage+0)
 			else
 				wsTemp.bestTypeDamage = (damage+0)
 			end
@@ -429,15 +459,15 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 				wsTemp.bestTypeDamage = tonumber(cp.statsdamage)
 			end
 			
-			wsTemp.burst = wdEntry.burst or 1
-			wsTemp.projectiles = wdEntry.projectiles or 1
-			wsTemp.dam = 0
-			wsTemp.damw = 0
+			wsTemp.burst = tonumber(wdEntry.customparams.script_burst) or wdEntry.burst or 1
+			wsTemp.projectiles = wdEntry.projectiles or 1			
+			wsTemp.dam = 0	-- physical damage
+			wsTemp.damw = 0 -- EMP
 			
-			if wsTemp.paralyzer then
-				wsTemp.damw = wsTemp.bestTypeDamagew * wsTemp.burst * wsTemp.projectiles
+			if wsTemp.paralyzer and not wdEntry.customparams.extra_damage then
+				wsTemp.damw = wsTemp.bestTypeDamageW * wsTemp.burst * wsTemp.projectiles
 				if wsTemp.projectiles > 1 or wsTemp.burst > 1 then
-					wsTemp.damwBreakdown = wsTemp.bestTypeDamagew .. ' × ' .. (wsTemp.projectiles * wsTemp.burst)
+					wsTemp.damwBreakdown = wsTemp.bestTypeDamageW .. ' × ' .. (wsTemp.projectiles * wsTemp.burst)
 				end
 			else
 				wsTemp.dam = wsTemp.bestTypeDamage * wsTemp.burst * wsTemp.projectiles
@@ -446,12 +476,12 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 				end
 			end
 			
-			if wdEntry.customparams and wdEntry.customparams.extra_damage then
-				wsTemp.dam = wdEntry.customparams.extra_damage * wsTemp.burst * wsTemp.projectiles
+			if wdEntry.customparams.extra_damage then
+				wsTemp.damw = wdEntry.customparams.extra_damage * wsTemp.burst * wsTemp.projectiles
 				if wsTemp.projectiles > 1 or wsTemp.burst > 1 then
-					wsTemp.damBreakdown = wdEntry.customparams.extra_damage .. ' × ' .. (wsTemp.projectiles * wsTemp.burst)
+					wsTemp.damwBreakdown = wdEntry.customparams.extra_damage .. ' × ' .. (wsTemp.projectiles * wsTemp.burst)
 				end
-				wsTemp.bestTypeDamage = wsTemp.dam
+				wsTemp.bestTypeDamageW = wsTemp.damw
 			end
 			
 			if cp.damage_vs_shield then	-- Wolverine
@@ -460,23 +490,25 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 			end
 			
 			wsTemp.dps 	= 0
-			wsTemp.dpsw 	= 0
+			wsTemp.dpsw = 0
 			
 			if wsTemp.paralyzer then
 				wsTemp.stuntime = wdEntry.paralyzetime
 			end
 			
-			local tempDPS = 0	
-			if wdEntry.reloadtime and wdEntry.reloadtime > 0 then
+			local tempDPS = 0
+			local reload = tonumber(wdEntry.customparams.script_reload) or wdEntry.reloadtime
+			if reload and reload > 0 then
 				if wsTemp.paralyzer then
-					tempDPS = math.floor(wsTemp.damw/wdEntry.reloadtime + 0.5)
+					tempDPS = math.floor(wsTemp.damw/reload + 0.5)
 				else
-					tempDPS = math.floor(wsTemp.dam/wdEntry.reloadtime + 0.5)
+					tempDPS = math.floor(wsTemp.dam/reload + 0.5)
 				end
 			end
 			
 			if cp.disarmdamagemult then
 				wsTemp.dpsd = tempDPS * cp.disarmdamagemult
+				wsTemp.bestTypeDamageD = wsTemp.bestTypeDamage * cp.disarmdamagemult
 				if tobool(cp.disarmdamageonly) then
 					wsTemp.dam = 0
 					wsTemp.bestTypeDamage = 0
@@ -486,20 +518,21 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 			
 			if cp.timeslow_damagefactor then
 				wsTemp.dpss = tempDPS * cp.timeslow_damagefactor
+				wsTemp.bestTypeDamageS = wsTemp.bestTypeDamage * cp.timeslow_damagefactor
 				if tobool(cp.timeslow_onlyslow) then
 					wsTemp.dam = 0
 					wsTemp.bestTypeDamage = 0
 				end
 			end
 			
-			if wdEntry.reloadtime and wdEntry.reloadtime > 0 then
+			if reload and reload > 0 then
 				if wsTemp.paralyzer then
-					wsTemp.dpsw = math.floor(wsTemp.damw/wdEntry.reloadtime + 0.5)
+					wsTemp.dpsw = math.floor(wsTemp.damw/reload + 0.5)
 					if cp.extra_damage then
-						wsTemp.dps = math.floor(wsTemp.dam/wdEntry.reloadtime + 0.5)
+						wsTemp.dps = math.floor(wsTemp.dam/reload + 0.5)
 					end
 				else
-					wsTemp.dps = math.floor(wsTemp.dam/wdEntry.reloadtime + 0.5)
+					wsTemp.dps = math.floor(wsTemp.dam/reload + 0.5)
 				end
 			end
 			--print('test', unitDef.unitname, wsTemp.wname, bestDamage, bestDamageIndex)
@@ -550,19 +583,20 @@ local function printWeaponTemplate(ws, unitDef, mult)
 	str = str .. writeTemplateLine("type", ws.weapontype, 1)
 	str = str .. writeTemplateLine("damage", ws.damBreakdown or comma_value(ws.bestTypeDamage), 1)
 	if ws.reloadtime then
-		str = str .. writeTemplateLine("reloadtime", comma_value(ws.reloadtime), 1)
+		str = str .. writeTemplateLine("reloadtime", comma_value(ws.customparams.script_reload or ws.reloadtime), 1)
 	end
 	if ws.dps > 0 then
 		str = str .. writeTemplateLine("dps", comma_value(ws.dps), 1)
 	end
 	if ws.dpsd then	-- disarm
-		--str = str .. writeTemplateLine("disarmdamage", ws.damwBreakdown or comma_value(ws.bestTypeDamagew))
+		str = str .. writeTemplateLine("disarmdamage", ws.damdBreakdown or comma_value(ws.bestTypeDamageD), 1)
 		str = str .. writeTemplateLine("disarmdps", comma_value(ws.dpsd), 1)
-	elseif ws.paralyzer then	-- EMP
-		str = str .. writeTemplateLine("empdamage", ws.damwBreakdown or comma_value(ws.bestTypeDamagew), 1)
+	elseif ws.paralyzer or ((ws.stuntime or 0) > 0) then	-- EMP
+		str = str .. writeTemplateLine("empdamage", ws.damwBreakdown or comma_value(ws.bestTypeDamageW), 1)
 		str = str .. writeTemplateLine("empdps", comma_value(ws.dpsw), 1)
 	end
 	if ws.dpss then	-- slow
+		str = str .. writeTemplateLine("slowdamage", ws.damdBreakdown or comma_value(ws.bestTypeDamageS), 1)
 		str = str .. writeTemplateLine("slowdps", comma_value(ws.dpss), 1)
 	end
 	
@@ -778,7 +812,7 @@ function printWeaponsTemplates(unitDef)
 				for _,index2 in ipairs(mainweapon) do
 					--print('test', unitDef.unitname, index, index2)
 					wsm = weaponStats[index2]
-					ws.damw = ws.damw + wsm.bestTypeDamagew
+					ws.damw = ws.damw + wsm.bestTypeDamageW
 					ws.dpsw = ws.dpsw + wsm.dpsw
 					ws.dam = ws.dam + wsm.bestTypeDamage
 					ws.dps = ws.dps + wsm.dps
@@ -889,6 +923,7 @@ function printUnitStatsTemplate(unitDef)
 	str = str .. writeTemplateLine("defname", unitDef.unitname)
 	str = str .. writeTemplateLine("description", getDescription(unitDef, lang))
 	str = str .. writeTemplateLine("image", buildPic(unitDef.buildpic or unitDef.unitname .. '.png'))
+	str = str .. writeTemplateLine("icontype", unitDef.icontype)
 	str = str .. writeTemplateLine("cost", getCost(unitDef))
 	str = str .. writeTemplateLine("hitpoints", unitDef.maxdamage)
 	
@@ -934,6 +969,24 @@ function printUnitStatsTemplate(unitDef)
 	
 	-- write abilities
 	local abilities = ""
+	
+	-- drones
+	local droneData = droneCarriers[unitDef.id]	
+	if droneData then
+		for i=1,#droneData do
+			local droneEntry = droneData[i]
+			abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability drone")
+			.. writeTemplateLine("drone", "[[" .. UnitDefsByFakeID[droneEntry.drone].name .. "]]", 1)
+			.. writeTemplateLine("maxdrones", droneEntry.maxDrones, 1)
+			.. writeTemplateLine("range", droneEntry.range, 1)
+			.. writeTemplateLine("interval", droneEntry.reloadTime, 1)
+			.. writeTemplateLine("spawnsize", droneEntry.spawnSize, 1)
+			.. writeTemplateLine("buildtime", droneEntry.buildTime, 1)
+			.. writeTemplateLine("maxbuilding", droneEntry.maxBuild, 1)
+			abilities = abilities .. writeClosingLine()
+		end
+	end
+	
 	-- builder
 	if (unitDef.workertime or 0) > 0 then
 		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability construction")

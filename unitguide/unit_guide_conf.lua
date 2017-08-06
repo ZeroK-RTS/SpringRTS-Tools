@@ -28,8 +28,8 @@ facs.one = {
 	'factoryplane',
 	'factorygunship',
 	'factoryship',
-	'armcsa',
-	'missilesilo',
+	'athena',
+	'staticmissilesilo',
 	'striderhub',
 }
 
@@ -116,7 +116,7 @@ local faction_data = {
 	ignore = ignore,
 	printMobileOnly = printMobileOnly,
 	useBuildOptionFile = true,
-	path='http://packages.springrts.com/zkmanual',
+	path='http://manual.zero-k.info',
 	svnurl='http://zero-k.googlecode.com/svn/trunk/mods/zk'
 }
 
