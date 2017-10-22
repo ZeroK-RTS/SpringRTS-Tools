@@ -1,5 +1,14 @@
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- settings
+
 local exportAsJson = false
-local infoboxOnly = true	-- only for mediawiki format; json is always infobox-only
+local infoboxOnly = false	-- only for mediawiki format; json is always infobox-only
+local printNavbox = false
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- string functions
 
 local function to_string(data, indent)
     local str = ""
@@ -76,7 +85,7 @@ end
 
 path = arg[1]
 output = arg[2]
-lang = arg[3]
+lang = arg[3] or "en"
 
 local nl = "\n"
 local nlnl = "\n\n"
@@ -88,6 +97,8 @@ local unitDefs = {}
 local weaponDefs = {}
 
 local printedunitlistkeys = {}
+
+loadstring = load
 
 Spring = { 
 	GetModOptions = function() end,
@@ -163,21 +174,11 @@ local function scandir(dirname)
 	return tabby
 end
 
-local function GetRevision()
-	callit = os.tmpname()
-	
-	--os.execute("svn info " .. faction_data.svnurl .." >"..callit)
-	
-	--os.execute("git rev-list --count HEAD >"..callit)
-	
-	os.execute("date >"..callit)
-	
-	fs = io.open(callit,"r")
-	rv = fs:read("*all")
-	fs:close()
-	os.remove(callit)
-	--return rv:match( 'Last Changed Rev:%s*(%d+)' )
-	return rv
+local function readFile(path)
+	local file = io.open(path,"r")
+	local str = file:read("*a")
+	file:close()
+	return str
 end
 
 local fileList = scandir(path ..'/units')
@@ -270,6 +271,9 @@ end
 ]]
 local nonlatin = {ru=1}
 
+dofile(path .. "/LuaUI/Utilities/json.lua")
+local enLangJson = readFile(path .. "/LuaUI/Configs/lang/units.en.json")
+local enLang = Spring.Utilities.json.decode(enLangJson, 0)
 
 function comma_value(amount, displayPlusMinus)
 	local formatted
@@ -344,21 +348,22 @@ end
 function getDescription(unitDef, forcelang)
 	local lang_to_use = forcelang or lang
 
-	if lang_to_use == 'en' then
-		return unitDef.description or ''
+	if lang_to_use == 'en' and enLang[unitDef.unitname] and enLang[unitDef.unitname].description then
+		return enLang[unitDef.unitname].description 
 	elseif nonLatinTrans[lang_to_use] then
 		local unitTrans = nonLatinTrans[lang_to_use].units[unitDef.unitname]
 		return unitTrans and unitTrans.description or ''
 	else
-		return unitDef.customparams and unitDef.customparams['description_' .. lang_to_use] or ''
+		return unitDef.customparams and unitDef.customparams['description_' .. lang_to_use] or unitDef.description or ''
 	end
 end	
 
 function getHelpText(unitDef, forcelang)
 	local lang_to_use = forcelang or lang	
 
-	
-	if nonLatinTrans[lang_to_use] then
+	if lang_to_use == 'en' and enLang[unitDef.unitname] and enLang[unitDef.unitname].helptext then
+		return enLang[unitDef.unitname].helptext
+	elseif nonLatinTrans[lang_to_use] then
 		local unitTrans = nonLatinTrans[lang_to_use].units[unitDef.unitname]
 		return unitTrans and unitTrans.helptext or ''
 	end
@@ -1161,7 +1166,7 @@ function printUnit(unitname, parentFac)
 		end
 		local article = getArticle(desc)
 		str = str .. "The '''{{PAGENAME}}''' is " .. article .. " " .. desc
-		if unitname:find("chicken") then
+		if unitname:find("chicken") and (not string.find(desc, "chicken")) then
 			str = str .. " [[Chicken Defense|chicken]]"
 		end
 		if parentFac then
@@ -1189,8 +1194,10 @@ function printUnit(unitname, parentFac)
 		end
 		
 		-- write navbox
-		if isBuilding then str = str .. "\n\n{{Navbox buildings}}"
-		else str = str .. "\n\n{{Navbox units}}"
+		if printNavbox then
+			if isBuilding then str = str .. "\n\n{{Navbox buildings}}"
+			else str = str .. "\n\n{{Navbox units}}"
+			end
 		end
 	end
 	

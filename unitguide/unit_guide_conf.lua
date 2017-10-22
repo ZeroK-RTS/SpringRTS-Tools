@@ -34,9 +34,10 @@ facs.one = {
 }
 
 local extra_units = {
-	'nebula', 'heavyturret', 'iwin', 'amgeo',
-	'hoverskirm', 'bomberassault', 'bomberskirm', 'bomberstrike', 'subscout', 'destroyer', 'assaultcruiser', 'hoversonic', 'hoverskirm', 
-	'attackdrone', 'battledrone', 'fighterdrone',
+	'nebula', 'turretsunlance', 'iwin', 'energyheavygeo',
+	'bomberassault', 'bomberskirm', 'bomberstrike', 'subscout', 'destroyer', 'assaultcruiser',
+	'hoversonic', 'hoverskirm2', 'hovershotgun', 'grebe',
+	'dronecarry', 'dronefighter', 'droneheavyslow', 'dronelight',
 	'wolverine_mine', 'tele_beacon',
 	
 	'chicken',
