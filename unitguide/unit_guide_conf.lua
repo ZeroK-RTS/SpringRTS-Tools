@@ -38,7 +38,7 @@ local extra_units = {
 	'bomberassault', 'bomberskirm', 'bomberstrike', 'subscout', 'destroyer', 'assaultcruiser',
 	'hoversonic', 'hoverskirm2', 'hovershotgun', 'grebe',
 	'dronecarry', 'dronefighter', 'droneheavyslow', 'dronelight',
-	'wolverine_mine', 'tele_beacon',
+	'wolverine_mine', 'tele_beacon', 'starlight_satellite',
 	
 	'chicken',
 	'chickena',

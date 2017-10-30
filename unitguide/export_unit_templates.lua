@@ -344,32 +344,39 @@ function buildPic(buildPicName)
 	return faction_data.path ..'/unitpics/'.. string.lower(buildPicName)	
 end
 
--- FIXME: read from JSON with i18n library
 function getDescription(unitDef, forcelang)
 	local lang_to_use = forcelang or lang
+	local str
 
 	if lang_to_use == 'en' and enLang[unitDef.unitname] and enLang[unitDef.unitname].description then
-		return enLang[unitDef.unitname].description 
+		str = enLang[unitDef.unitname].description 
 	elseif nonLatinTrans[lang_to_use] then
 		local unitTrans = nonLatinTrans[lang_to_use].units[unitDef.unitname]
-		return unitTrans and unitTrans.description or ''
+		str = unitTrans and unitTrans.description or ''
 	else
-		return unitDef.customparams and unitDef.customparams['description_' .. lang_to_use] or unitDef.description or ''
+		str = unitDef.customparams and unitDef.customparams['description_' .. lang_to_use] or unitDef.description or ''
 	end
+	-- remove double percentage sign
+	str = string.gsub(str, "%%%%", "%%")
+	return str
 end	
 
 function getHelpText(unitDef, forcelang)
 	local lang_to_use = forcelang or lang	
 
 	if lang_to_use == 'en' and enLang[unitDef.unitname] and enLang[unitDef.unitname].helptext then
-		return enLang[unitDef.unitname].helptext
+		str = enLang[unitDef.unitname].helptext
 	elseif nonLatinTrans[lang_to_use] then
 		local unitTrans = nonLatinTrans[lang_to_use].units[unitDef.unitname]
-		return unitTrans and unitTrans.helptext or ''
+		str = unitTrans and unitTrans.helptext or ''
+	else
+		local suffix = (lang_to_use == 'en') and '' or ('_' .. lang_to_use)	
+		str = unitDef.customparams and unitDef.customparams['helptext' .. suffix] or ''
 	end
 	
-	local suffix = (lang_to_use == 'en') and '' or ('_' .. lang_to_use)	
-	return unitDef.customparams and unitDef.customparams['helptext' .. suffix] or ''
+	-- remove double percentage sign
+	str = string.gsub(str, "%%%%", "%%")
+	return str
 end
 
 local hitscan = {
