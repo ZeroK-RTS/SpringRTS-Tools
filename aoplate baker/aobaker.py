@@ -32,7 +32,7 @@ import sys
 import os
 from struct import *
 import Image
-xnormalpath="\"C:\\Program Files (x86)\\Santiago Orgaz\\xNormal\\3.17.3\\x64\\"
+xnormalpath="\"C:\\Program Files\\S_Orgaz\\xNormal 3.19.3\\x64\\"
 pnum=1
 vnum=1
 runxnormal=1
