@@ -75,11 +75,12 @@ local factoryLongName = {
 	"None",
 }
 
-local function GetMatchupData(battles, eloMinLimit, eloRangeLimit)
+local function GetMatchupData(battles, eloMinLimit, eloRangeLimit, includeNoneGames)
+	local facCount = (includeNoneGames and 12) or 11
 	local factoryMatchup = {}
-	for i = 1, 12 do
+	for i = 1, facCount do
 		local tbl = {}
-		for j = 1, 12 do
+		for j = 1, facCount do
 			tbl[j] = 0
 		end
 		factoryMatchup[i] = tbl
@@ -91,13 +92,15 @@ local function GetMatchupData(battles, eloMinLimit, eloRangeLimit)
 		local minElo = math.min(data.LoserElo or 0, data.WinnerElo or 0)
 		local maxElo = math.max(data.LoserElo or 0, data.WinnerElo or 0)
 		if minElo >= eloMinLimit and maxElo - minElo <= eloRangeLimit then
-			gameCount = gameCount + 1
-			local winPlop = data.WinnerPlop or "none"
-			local losePlop = data.LoserPlop or "none"
-			
-			local winIndex = factoryOrder[winPlop]
-			local loseIndex = factoryOrder[losePlop]
-			factoryMatchup[winIndex][loseIndex] = factoryMatchup[winIndex][loseIndex] + 1
+			if includeNoneGames or (data.WinnerPlop and data.LoserPlop) then
+				gameCount = gameCount + 1
+				local winPlop = data.WinnerPlop or "none"
+				local losePlop = data.LoserPlop or "none"
+				
+				local winIndex = factoryOrder[winPlop]
+				local loseIndex = factoryOrder[losePlop]
+				factoryMatchup[winIndex][loseIndex] = factoryMatchup[winIndex][loseIndex] + 1
+			end
 		end
 	end
 	
@@ -106,14 +109,14 @@ local function GetMatchupData(battles, eloMinLimit, eloRangeLimit)
 	
 	Spring.Echo("Row against column - raw wins")
 	local echoLine = "|| || "
-	for i = 1, 12 do
+	for i = 1, facCount do
 		echoLine = echoLine .. factoryName[i] .. " || "
 	end
 	Spring.Echo(echoLine)
 	
-	for i = 1, 12 do
+	for i = 1, facCount do
 		echoLine = "|| " .. factoryName[i] .. " || "
-		for j = 1, 12 do
+		for j = 1, facCount do
 			echoLine = echoLine .. factoryMatchup[i][j] .. " || "
 		end
 		Spring.Echo(echoLine)
@@ -121,14 +124,14 @@ local function GetMatchupData(battles, eloMinLimit, eloRangeLimit)
 	
 	Spring.Echo("Row against column - win chance")
 	local echoLine = "|| || "
-	for i = 1, 12 do
+	for i = 1, facCount do
 		echoLine = echoLine .. factoryName[i] .. " || "
 	end
 	Spring.Echo(echoLine)
 	
-	for i = 1, 12 do
+	for i = 1, facCount do
 		echoLine = "|| " .. factoryName[i] .. " || "
-		for j = 1, 12 do
+		for j = 1, facCount do
 			if factoryMatchup[i][j] + factoryMatchup[j][i] == 0 then
 				echoLine = echoLine .. "---" .. " || "
 			else
@@ -139,7 +142,7 @@ local function GetMatchupData(battles, eloMinLimit, eloRangeLimit)
 	end
 end
 
-local function GetPickrateData(battles, eloMinLimit, eloRangeLimit)
+local function GetPickrateData(battles, eloMinLimit, eloRangeLimit, includeNoneGames)
 	local factoryStats = {}
 	local gameCount = 0
 	for i = 1, #battles do
@@ -147,18 +150,20 @@ local function GetPickrateData(battles, eloMinLimit, eloRangeLimit)
 		local minElo = math.min(data.LoserElo or 0, data.WinnerElo or 0)
 		local maxElo = math.max(data.LoserElo or 0, data.WinnerElo or 0)
 		if minElo >= eloMinLimit and maxElo - minElo <= eloRangeLimit then
-			gameCount = gameCount + 1
-			local winPlop = data.WinnerPlop or "none"
-			local losePlop = data.LoserPlop or "none"
-			
-			factoryStats[winPlop] = factoryStats[winPlop] or {0, 0, 0}
-			factoryStats[losePlop] = factoryStats[losePlop] or {0, 0, 0}
-			if winPlop == losePlop then
-				factoryStats[winPlop][3] = factoryStats[winPlop][3] + 1
-			else
-				factoryStats[winPlop][1] = factoryStats[winPlop][1] + 1
-				factoryStats[winPlop][2] = factoryStats[winPlop][2] + 1
-				factoryStats[losePlop][1] = factoryStats[losePlop][1] + 1
+			if includeNoneGames or (data.WinnerPlop and data.LoserPlop) then
+				gameCount = gameCount + 1
+				local winPlop = data.WinnerPlop or "none"
+				local losePlop = data.LoserPlop or "none"
+				
+				factoryStats[winPlop] = factoryStats[winPlop] or {0, 0, 0}
+				factoryStats[losePlop] = factoryStats[losePlop] or {0, 0, 0}
+				if winPlop == losePlop then
+					factoryStats[winPlop][3] = factoryStats[winPlop][3] + 1
+				else
+					factoryStats[winPlop][1] = factoryStats[winPlop][1] + 1
+					factoryStats[winPlop][2] = factoryStats[winPlop][2] + 1
+					factoryStats[losePlop][1] = factoryStats[losePlop][1] + 1
+				end
 			end
 		end
 	end
@@ -188,12 +193,12 @@ function widget:Update()
 	for i = 1, #battleData do
 		battleData[i] = Spring.Utilities.json.decode(battleData[i])
 	end
-	GetMatchupData(battleData, 500, 500)
-	GetPickrateData(battleData, 500, 500)
+	GetPickrateData(battleData, 0, 500)
+	GetMatchupData(battleData, 0, 500)
 	
-	GetMatchupData(battleData, 1500, 500)
 	GetPickrateData(battleData, 1500, 500)
+	GetMatchupData(battleData, 1500, 500)
 	
-	GetMatchupData(battleData, 2000, 500)
 	GetPickrateData(battleData, 2000, 500)
+	GetMatchupData(battleData, 2000, 500)
 end
