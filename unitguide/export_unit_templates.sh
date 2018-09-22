@@ -15,11 +15,10 @@ cp "/media/histidine/228CBE3D8CBE0AF5/Games/Spring/games/zk.sdd/gamedata/buildop
 
 #for i in $UNITS/*.lua; do sed -r "s/.+(unitDef = \{)/\1/g" $i > $i.old; mv $i.old $i; done
 
-lua5.3 "/media/histidine/My Book/Games/Spring/SpringRTS-Tools/unitguide/export_unit_templates.lua" $UNITS $MARKUP en
+lua5.3 "./export_unit_templates.lua" "$UNITS" $MARKUP en
 #recode ISO-8859-1..UTF-8 $MARKUP
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
 cp -r $MARKUP "$OUTPUT"
 
 rm -rf $TMPDIR
-

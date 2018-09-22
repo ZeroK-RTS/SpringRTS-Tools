@@ -3,9 +3,10 @@
 -- settings
 
 local exportAsJson = false
-local infoboxOnly = false	-- only for mediawiki format; json is always infobox-only
+local infoboxOnly = true	-- only for mediawiki format; json is always infobox-only
 local printNavbox = false
 
+currUnit = ""
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 -- string functions
@@ -107,6 +108,9 @@ Spring = {
 	Echo = function(...) print(...) end
 }
 
+Shared = {}
+dofile(path .. "/gamedata/unitdefs_pre.lua")
+
 local DO_NOT_INCLUDE = {	-- FIXME HAX
 	["gamedata/modularcomms/unitdefgen.lua"] = true,
 	["gamedata/planetwars/pw_unitdefgen.lua"] = true,
@@ -155,7 +159,8 @@ a Linux example of a directory parser
 
 local function scandir(dirname)
 	callit = os.tmpname()
-	os.execute("ls -a1 "..dirname .. " >"..callit)
+	os.execute([[ls -a1 "]].. dirname .. [[" >]] ..callit)
+
 	fs = io.open(callit,"r")
 	rv = fs:read("*all")
 	fs:close()
@@ -275,23 +280,28 @@ dofile(path .. "/LuaUI/Utilities/json.lua")
 local enLangJson = readFile(path .. "/LuaUI/Configs/lang/units.en.json")
 local enLang = Spring.Utilities.json.decode(enLangJson, 0)
 
+function isInteger(amount)
+  local remainder = amount%1
+  return remainder < 0.01 or (1-remainder) < 0.01
+end
+
 function comma_value(amount, displayPlusMinus)
 	local formatted
 
 	-- amount is a string when ToSI is used before calling this function
 	if type(amount) == "number" then
-		if (amount ==0) then formatted = "0" else 
-			if (amount < 2 and (amount * 100)%100 ~=0) then 
+		if (amount == 0) then formatted = "0" else 
+			if (amount < 2 and not isInteger(amount)) then 
 				if displayPlusMinus then formatted = string.format("%+.2f", amount)
 				else formatted = string.format("%.2f", amount) end 
-			elseif (amount < 20 and (amount * 10)%10 ~=0) then 
+			elseif (amount < 20 and not isInteger(amount)) then 
 				if displayPlusMinus then formatted = string.format("%+.1f", amount)
 				else formatted = string.format("%.1f", amount) end 
 			else
-				amount = math.floor(amount + 0.5)
+				amount = math.floor(amount + 0.501) -- .001 to work around goddamn floating points
 				if displayPlusMinus then formatted = string.format("%+d", amount)
 				else formatted = string.format("%d", amount) end 
-			end 
+			end
 		end
 	else
 		formatted = amount .. ""
@@ -452,7 +462,10 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 		end
 		--if wsTemp.aa_only then print("AA only", wsTemp.wname, unitWeaponEntry.onlytargetcategory) end
 	end
-	
+	if cp.stats_damage then
+		wdEntry.damage = {default = tonumber(cp.stats_damage)}
+	end
+
 	for unitType, damage in pairs(wdEntry.damage) do
 		damage = tonumber(damage)
 		damage = math.max(damage, 0) --shadow has negative damage, breaks the below logic.
@@ -512,9 +525,9 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 			local reload = tonumber(wdEntry.customparams.script_reload) or wdEntry.reloadtime
 			if reload and reload > 0 then
 				if wsTemp.paralyzer then
-					tempDPS = math.floor(wsTemp.damw/reload + 0.5)
+					tempDPS = wsTemp.damw/reload
 				else
-					tempDPS = math.floor(wsTemp.dam/reload + 0.5)
+					tempDPS = wsTemp.dam/reload
 				end
 			end
 			
@@ -539,12 +552,15 @@ local function processWeapon(unitWeaponEntry, weaponName, bestDamage, bestDamage
 			
 			if reload and reload > 0 then
 				if wsTemp.paralyzer then
-					wsTemp.dpsw = math.floor(wsTemp.damw/reload + 0.5)
+					wsTemp.dpsw = wsTemp.damw/reload
 					if cp.extra_damage then
-						wsTemp.dps = math.floor(wsTemp.dam/reload + 0.5)
+						wsTemp.dps = wsTemp.dam/reload
 					end
 				else
-					wsTemp.dps = math.floor(wsTemp.dam/reload + 0.5)
+					wsTemp.dps = wsTemp.dam/reload
+				end
+				if wsTemp.dps < 0.15 then
+					wsTemp.dps = 0  -- hack for Dodo bombs
 				end
 			end
 			--print('test', unitDef.unitname, wsTemp.wname, bestDamage, bestDamageIndex)
@@ -722,8 +738,8 @@ local function printWeaponTemplate(ws, unitDef, mult)
 		str2, numSpecial = writeCustomDataLine(nil, "Trajectory toggle", numSpecial, 1)
 		str = str .. str2
 	end
-	
-	if ws.waterWeapon and (ws.type ~= "TorpedoLauncher") then
+
+	if ws.waterweapon and (ws.weapontype ~= "TorpedoLauncher") then
 		str2, numSpecial = writeCustomDataLine(nil, "Water capable", numSpecial, 1)
 		str = str .. str2
 	end
@@ -929,6 +945,7 @@ end
 function printUnitStatsTemplate(unitDef)
 	local cp = unitDef.customparams
 	local isBuilding = not unitDef.maxvelocity or tonumber(unitDef.maxvelocity) < 0.1
+	currUnit = unitDef.name
 	
 	local str = exportAsJson and "{" or "{{ Infobox zkunit"
 	str = str .. writeTemplateLine("name", unitDef.name)
@@ -1109,7 +1126,7 @@ function printUnitStatsTemplate(unitDef)
 			miscAble = miscAble .. writeTemplateLine("customdata".. num, "Immunity to afterburn", 1)
 			num = num + 1
 		end
-		if tobool(cp.dontfireatradarcommand) then
+		if cp.dontfireatradarcommand ~= nil then
 			miscAble = miscAble .. writeTemplateLine("customdata".. num, "Can ignore unidentified targets", 1)
 			num = num + 1
 		end
