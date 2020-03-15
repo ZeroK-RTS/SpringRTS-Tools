@@ -108,8 +108,7 @@ Spring = {
 	Echo = function(...) print(...) end
 }
 
-Shared = {}
-dofile(path .. "/gamedata/unitdefs_pre.lua")
+Shared = dofile(path .. "/gamedata/unitdefs_pre.lua")
 
 local DO_NOT_INCLUDE = {	-- FIXME HAX
 	["gamedata/modularcomms/unitdefgen.lua"] = true,
@@ -194,6 +193,7 @@ for n,fileName in ipairs(fileList) do
 		if not unitDefsTable then 
 			print('Error #1 ' .. fileName)
 		else
+			unitDefsTable = lowerkeys(unitDefsTable)
 			for k,v in pairs(unitDefsTable) do
 				v.unitname = k --jw
 				unitDefs[k] = v
@@ -682,11 +682,13 @@ local function printWeaponTemplate(ws, unitDef, mult)
 	
 	if cp.spawns_name then
 		local spawnDef = unitDefs[cp.spawns_name]
-		str2, numCustom = writeCustomDataLine("Spawns Unit", "[["..spawnDef.name.."]]", numCustom, 1)
-		str = str .. str2
-		if tonumber(cp.spawns_expire) and tonumber(cp.spawns_expire) > 0 then
-			str2, numCustom = writeCustomDataLine("Spawn Life (s)", cp.spawns_expire, numCustom, 1)
+		if (spawnDef ~= nil) then
+			str2, numCustom = writeCustomDataLine("Spawns Unit", "[["..spawnDef.name.."]]", numCustom, 1)
 			str = str .. str2
+			if tonumber(cp.spawns_expire) and tonumber(cp.spawns_expire) > 0 then
+				str2, numCustom = writeCustomDataLine("Spawn Life (s)", cp.spawns_expire, numCustom, 1)
+				str = str .. str2
+			end
 		end
 	end
 
@@ -1156,16 +1158,21 @@ end
 
 function printUnit(unitname, parentFac)
 	if printedunitlistkeys[unitname] then
+		--print("Already printed unit " .. unitname)
 		return	
 	end
 	if faction_data.ignore[unitname] then
+		--print("Ignoring " .. unitname)
 		return
 	end
 	--print('Printing unit:', unitname)
 	
 	local unitDef = unitDefs[unitname]
 	
-	if not unitDef then return false; end
+	if not unitDef then 
+		--print("Unit not found: " .. unitname)
+		return false
+	end
 	
 	if not unitDef.unitname then 
 		--return false; 
@@ -1255,7 +1262,8 @@ function printFaction(intname, image)
 	local printMobileOnly = faction_data.printMobileOnly
 	local useBuildOptionFile = faction_data.useBuildOptionFile
 	
-	for _, fac in pairs(faclist) do
+	for facIndex, fac in pairs(faclist) do
+		--print("Printing factory: " .. fac)
 		printFac(fac, printMobileOnly[fac])
 	end
 
