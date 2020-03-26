@@ -54,8 +54,8 @@ local MAP_SIZE_Z_SCALED = MAP_SIZE_Z / METAL_MAP_SQUARE_SIZE
 
 local myTeamID = Spring.GetMyTeamID()
 
-local mexDefID = UnitDefNames["cormex"].id
-local mexUnitDef = UnitDefNames["cormex"]
+local mexDefID = UnitDefNames["staticmex"].id
+local mexUnitDef = UnitDefNames["staticmex"]
 local mexDefInfo = {
 	extraction = 0.001,
 	square = mexUnitDef.extractSquare,
