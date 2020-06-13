@@ -1,0 +1,24 @@
+{
+	"name": "ZKMediaWikiAuth",
+	"version": "1",
+	"author": [
+		"Histidine (L.J. Lim)"
+	],
+	"url": "https://github.com/ZeroK-RTS/Zero-K",
+	"description": "Login to MediaWiki with Zero-K account",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"AutoloadClasses": {
+		"ZeroKPrimaryAuthenticationProvider": "ZeroKPrimaryAuthenticationProvider.php"
+	},
+	"AuthManagerAutoConfig": {
+        "primaryauth": {
+            "ZeroKPrimaryAuthenticationProvider": {
+                "class": "\\MediaWiki\\Extension\\ZKMediaWikiAuth\\ZeroKPrimaryAuthenticationProvider",
+                "args": [ ],
+				"sort" : 25
+            }
+        }
+	},
+	"manifest_version": 1
+}
