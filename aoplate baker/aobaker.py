@@ -32,7 +32,7 @@ import sys
 import os
 from struct import *
 import Image
-xnormalpath="\"C:\\Program Files\\S_Orgaz\\xNormal 3.19.3\\x64\\"
+xnormalpath="\"E:\\Program Files\\S_Orgaz\\xNormal 3.19.3\\x64\\"
 pnum=1
 vnum=1
 runxnormal=1
@@ -41,7 +41,7 @@ runnvdxt=1
 only=''
 cwd=os.getcwd()
 aoraysperpixel=256
-aoplaterez=128
+aoplaterez=512
 defdir='.\\units\\'
 texdir='.\\unittextures\\'
 objdir='.\\objects3d\\'

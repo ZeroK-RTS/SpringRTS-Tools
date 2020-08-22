@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<Conf xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <BuildIconPath>C:\Users\Tim\Documents\my games\Spring Dev\SpringRTS-Tools\MapIconBuilder\MapIconFactories</BuildIconPath>
+  <MapIconPath>C:\Users\Tim\Documents\my games\Spring Dev\SpringRTS-Tools\MapIconBuilder\MapIconFactories</MapIconPath>
+  <Extension>png</Extension>
+</Conf>
