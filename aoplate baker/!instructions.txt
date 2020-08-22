@@ -18,3 +18,4 @@ When done
 2) copy *.dds files back to "unittextures" subfolder 
 
 
+Run with E:\Python27\python.exe aobaker.py
