@@ -1,0 +1,36 @@
+Complete S3O to OBJ and OBJ to S3O converter.
+Needs python 2.x to run.
+
+Launch by double clicking obj2s3o.py!
+(Run with E:\Python27\python.exe obj2s3o.py)
+
+Converts OBJ files to S3O files, while retaining pieces and piece hierarchies.
+Instructions and notes:
+1. Converting S3O to OBJ:
+Open an s3o file, and the obj file will be saved with the same name and an .obj extension. The name of each object in the .obj file will reflect the naming and pieces of the s3o file. All s3o data is retained, and is listed as a series of parameters in the object's name.
+Example:
+base,ox=-0.00,oy=0.00,oz=0.00,p=,mx=-0.00,my=4.00,mz=0.00,r=17.50,h=21.00,t1=tex1.png,t2=tex2.png
+ALL s3o info is retained, including piece hierarchy, piece origins, smoothing groups, vertex normals, and even degenerate pieces with no geometry used as emit points and vectors. These emit pieces will be shown as triangles with their correct vertex ordering.
+2. Converting OBJ to S3O:
+The opened .obj file will be converted into s3o. If the piece names contain the information as specified in the above example, the entire model hierarchy will be correctly converted. If it doesnt, then the program will convert each object as a child piece of an empty base object
+
+Version 2:
+Bug fixes in smoothing groups
+
+Version 3:
+Further minor bug fixes.
+
+version 4:
+Fixed a major bug when obj->s3o and the model was not previously s3o
+
+Version 5:
+fixed a bug in the UV linear transformation
+
+File Information
+Title / Version 	OBJ to S3O converter 5
+License 	Freeware / Free
+Filename 	obj2s3o_v5.zip
+Filesize 	12.86 KB
+Date 	05/14/2012 - 22:21
+Changed 	05/25/2012 - 20:56
+Publisher / Author 	Beherith (Uploaded by Beherith)

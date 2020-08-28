@@ -29,19 +29,19 @@ return { plateshield = {
   canMove                       = true,
   canPatrol                     = true,
   category                      = [[SINK UNARMED]],
-  collisionVolumeOffsets        = [[0 -6 -5]],
+  collisionVolumeOffsets        = [[0 -6 -10]],
   collisionVolumeScales         = [[66 26 36]],
   collisionVolumeType           = [[box]],
   selectionVolumeOffsets        = [[0 0 0]],
-  selectionVolumeScales         = [[80 40 96]],
+  selectionVolumeScales         = [[88 48 104]],
   selectionVolumeType           = [[box]],
   corpse                        = [[DEAD]],
 
   customParams                  = {
     sortName           = [[1]],
     modelradius        = [[40]],
-    aimposoffset       = [[0 16 -20]],
-    midposoffset       = [[0 16 -20]],
+    aimposoffset       = [[0 16 -25]],
+    midposoffset       = [[0 16 -25]],
     solid_factory      = [[3]],
     default_spacing    = 4,
     unstick_help       = 1,
@@ -52,7 +52,7 @@ return { plateshield = {
 
   energyUse                     = 0,
   explodeAs                     = [[FAC_PLATEEX]],
-  footprintX                    = 6,
+  footprintX                    = 5,
   footprintZ                    = 7,
   iconType                      = [[padwalker]],
   idleAutoHeal                  = 5,
@@ -72,7 +72,7 @@ return { plateshield = {
   turnRate                      = 0,
   useBuildingGroundDecal        = true,
   workerTime                    = Shared.FACTORY_BUILDPOWER,
-  yardMap                       = [[ooooo ooooo ooooo yyyyy yyyyy yyyyy]],
+  yardMap                       = [[oooooo oooooo oooooo cccccc cccccc cccccc cccccc]],
 
   featureDefs                   = {
 
