@@ -31,8 +31,8 @@ import winsound
 import sys
 import os
 from struct import *
-import Image
-xnormalpath="\"E:\\Program Files\\S_Orgaz\\xNormal 3.19.3\\x64\\"
+from PIL import Image
+xnormalpath="\"C:\\Program Files\\xNormal\\3.19.3\\x64\\"
 pnum=1
 vnum=1
 runxnormal=1
@@ -45,7 +45,7 @@ aoplaterez=512
 defdir='.\\units\\'
 texdir='.\\unittextures\\'
 objdir='.\\objects3d\\'
-print 'Working in :',cwd
+print ('Working in :',cwd)
 if len(sys.argv)==2:
 	only=sys.argv[1]
 
@@ -63,7 +63,7 @@ for filename in os.listdir(os.getcwd()+defdir):
 			fbifilename=fname.partition('.')[0]+'.lua'
 		else:
 			fbifilename=fname.partition('.')[0]+'.fbi'
-		print 'Definition type is',deftype
+		print ('Definition type is',deftype)
 		fbi=open(defdir+fbifilename,'r')
 		fbiln=fbi.readlines()
 		static=0
@@ -78,7 +78,7 @@ for filename in os.listdir(os.getcwd()+defdir):
 				try:
 					mv=float(l.partition('=')[2].strip().strip(';,'))
 				except	ValueError:
-					print 'cant parse maxvelocity!'
+					print ('cant parse maxvelocity!')
 				if mv==0.0:
 					static=1
 				break
@@ -93,7 +93,7 @@ for filename in os.listdir(os.getcwd()+defdir):
 		if nomaxvel==1:
 			static=1
 		if static==0:
-			print filename, ': not static (mv',mv, ' no mv:',nomaxvel,' waterline:',wl
+			print (filename, ': not static (mv',mv, ' no mv:',nomaxvel,' waterline:',wl)
 			continue
 			
 
@@ -109,14 +109,14 @@ for filename in os.listdir(os.getcwd()+defdir):
 				try:
 					fpx=int(l.partition('=')[2].strip().strip(';,'))
 				except	ValueError:
-					print 'cant parse footprintx!'
+					print ('cant parse footprintx!')
 				break
 		for l in fbiln:					
 			if 'footprintz' in l.lower():
 				try:
 					fpz=int(l.partition('=')[2].strip().strip(';,'))
 				except	ValueError:
-					print 'cant parse footprintz!'
+					print ('cant parse footprintz!')
 				break
 		for l in fbiln:
 			if 'objectname' in l.lower():
@@ -125,14 +125,14 @@ for filename in os.listdir(os.getcwd()+defdir):
 				else:
 					objectname=l.partition('=')[2].strip().strip(',').strip().strip('[]\"')
 				break
-		print 'fbi parsed' , filename
+		print ('fbi parsed' , filename)
 			
 	#------------------------Parse for pre existing groundplate (preferably one not made by this)--------------
 		preplate=''
 		for l in fbiln:
 			if 'buildinggrounddecaltype' in l.lower():
 				if 'aoplane.dds' in l.lower().partition('=')[2]:
-					print filename, ' already contains an aoplate'
+					print (filename, ' already contains an aoplate')
 					break
 				else:
 					if '.dds' in l.lower() or '.png' in l.lower() or '.tga' in l.lower():
@@ -140,18 +140,18 @@ for filename in os.listdir(os.getcwd()+defdir):
 						try:
 							pp=open(texdir+preplate,'r')
 						except IOError:
-							print 'Cant open premade plate',texdir+preplate,' referenced from',filename
+							print ('Cant open premade plate',texdir+preplate,' referenced from',filename)
 							preplate=''
 							break
 						pp.close()
 						if '.dds' in l.lower():
 							cmd='convert '+texdir+preplate+' '+texdir+preplate.partition('.')[0]+'.tga'
 							preplate=preplate.partition('.')[0]+'.tga'
-							print cmd
+							print (cmd)
 							os.system(cmd)
 						
 					else:
-						print 'Error, groundplate not .DDS format!'
+						print ('Error, groundplate not .DDS format!')
 						preplate=''
 		ppx=0
 		ppy=0
@@ -162,26 +162,26 @@ for filename in os.listdir(os.getcwd()+defdir):
 					try:
 						ppx=int(l.partition('=')[2].strip().strip(',[];').strip())
 					except ValueError:
-						print 'Failed to parse buildingGroundDecalSizeX in',l,'in file:',filename
+						print ('Failed to parse buildingGroundDecalSizeX in',l,'in file:',filename)
 				if 'buildinggrounddecalsizey' in l.lower():
 					try:
 						ppy=int(l.partition('=')[2].strip().strip(',[];').strip())
 					except ValueError:
-						print 'Failed to parse buildingGroundDecalSizeY in',l,'in file:',filename
+						print ('Failed to parse buildingGroundDecalSizeY in',l,'in file:',filename)
 			if ppx>0 and ppy>0:
 				try:
 					ppimg=Image.open(texdir+preplate,'r')
 					ppsizex,ppsizey=ppimg.size
 				except:
-					print '------ERROR!-------------------------------Unable to open preexisting groundplate file!',preplate,filename
+					print ('------ERROR!-------------------------------Unable to open preexisting groundplate file!',preplate,filename)
 					continue
 				if ppsizex!=ppsizey:
-					print ' fucked up ground plate dimensions!', ppsizex, ppsizey
+					print (' fucked up ground plate dimensions!', ppsizex, ppsizey)
 				else:
 					pprez=ppsizex
-					print 'plate sizes parsed successfully! ',ppx, ppy,pprez
+					print ('plate sizes parsed successfully! ',ppx, ppy,pprez)
 			else:
-				print 'plate sizes not parsed well!'
+				print ('plate sizes not parsed well!')
 				preplate=''
 				
 		def reads3o(filename):
@@ -189,12 +189,12 @@ for filename in os.listdir(os.getcwd()+defdir):
 			try:
 				s3o=open(filename,'rb')
 			except IOError:
-				print "FAILED TO OPEN s3o file ",filename,'!\n'
+				print ("FAILED TO OPEN s3o file ",filename,'!\n')
 				return
 			magic=s3o.read(12)
 			header=s3o.read(4+5*4+4*4)
 			header=unpack('ifffffiiii',header)
-			print  'header:',header
+			print  ('header:',header)
 			recursereads3o(s3o, header[6],0,0,0)
 			
 		def recursereads3o(f,p,ox,oy,oz):
@@ -205,16 +205,16 @@ for filename in os.listdir(os.getcwd()+defdir):
 			piece=f.read(10*4+3*4)
 			piece=unpack('iiiiiiiiiifff',piece)
 			obj.write('o object'+str(pnum)+'\n')
-			# print 'piece:',piece
-			# print 'numchilds:',piece[1]
-			# print 'numvertices:',piece[3]
-			# print 'verticeoffset:',piece[4]
-			# print 'primitivetype:',piece[6]
-			# print 'vertextablesize:',piece[7]
-			# print 'vertextableoffset:',piece[8]
-			# print 'piece:',piece
-			# print 'piece:',piece
-			# print 'piece:',piece
+			# print ('piece:',piece)
+			# print ('numchilds:',piece[1])
+			# print ('numvertices:',piece[3])
+			# print ('verticeoffset:',piece[4])
+			# print ('primitivetype:',piece[6])
+			# print ('vertextablesize:',piece[7])
+			# print ('vertextableoffset:',piece[8])
+			# print ('piece:',piece)
+			# print ('piece:',piece)
+			# print ('piece:',piece)
 			pnum+=1
 			nv=piece[3]
 			f.seek(piece[4])
@@ -222,21 +222,21 @@ for filename in os.listdir(os.getcwd()+defdir):
 			ox+=piece[10]
 			oy+=piece[11]
 			oz+=piece[12]
-			# print 'numverts:',nv
+			# print ('numverts:',nv)
 			for i in range(0,nv):
 				try:
 					readdata=f.read(4*8)
 					if len(readdata)!=32:
-						print '-----======ERROR, read data is only ',len(readdata)
+						print ('-----======ERROR, read data is only ',len(readdata))
 					
-					#print 'vertex read success'
+					#print ('vertex read success')
 					v=unpack('ffffffff',readdata)
-					#print 'vertex', v, i, ' of ',nv
+					#print ('vertex', v, i, ' of ',nv)
 				except error:
-					print 'readdatalength:',len(readdata)
-					print v, i, ' of ',nv
+					print ('readdatalength:',len(readdata))
+					print (v, i, ' of ',nv)
 					
-				#print v[0] / (65536.0),v[1] / (65536.0), v[2] / (65536.0)
+				#print (v[0] / (65536.0),v[1] / (65536.0), v[2] / (65536.0))
 				obj.write('v '+str(v[0]+ox)+' '+str(v[1]+oy)+' '+str(v[2]+oz)+'\n')
 				obj.write('vn '+str(v[3])+' '+str(v[4])+' '+str(v[5])+'\n')
 				obj.write('vt 0 0\n') # or should be this for proper export: obj.write('vt '+str(v[6])+' '+str(v[7])+'\n')
@@ -249,9 +249,9 @@ for filename in os.listdir(os.getcwd()+defdir):
 			unpackstr=''
 			for i in range(0,piece[7]):
 				unpackstr+='l'
-			# print 'vtable length:',len(vtable)
+			# print ('vtable length:',len(vtable))
 			prims=unpack(unpackstr,vtable)
-			# print 'primitives:',len(prims),' ',prims
+			# print ('primitives:',len(prims),' ',prims)
 			if piece[6]==0: #triangles:
 				for i in range(0,len(prims),3):
 					obj.write('f '+str(prims[i]+vnum)+'/'+str(prims[i]+vnum)+'/'+str(prims[i]+vnum)+' '+str(prims[i+1]+vnum)+'/'+str(prims[i+1]+vnum)+'/'+str(prims[i+1]+vnum)+' '+str(prims[i+2]+vnum)+'/'+str(prims[i+2]+vnum)+'/'+str(prims[i+2]+vnum)+'\n')			
@@ -275,7 +275,7 @@ for filename in os.listdir(os.getcwd()+defdir):
 				f.seek(piece[2]+4*i)
 			
 				child=f.read(4)
-				# print child
+				# print (child)
 				f.seek(unpack('l',child)[0])
 				recursereads3o(f,unpack('l',child)[0],ox,oy,oz)
 			
@@ -285,13 +285,13 @@ for filename in os.listdir(os.getcwd()+defdir):
 			
 		def recurseread3do(px, py, pz):
 		#--------------------- unpack 3d0 files to OBJ files------------------------
-			print 'reading 3do'
+			print ('reading 3do')
 			global vnum
 			global pnum
 			main=f.read(13*4)
 			mo=unpack('lllllllllllll', main)
 
-			print mo
+			print (mo)
 			f.seek(mo[7])
 			obj.write('o object'+str(pnum)+'\n')
 
@@ -302,7 +302,7 @@ for filename in os.listdir(os.getcwd()+defdir):
 			for i in range(0,nv):
 				v=unpack('lll',f.read(4*3))
 
-				#print v[0] / (65536.0),v[1] / (65536.0), v[2] / (65536.0)
+				#print (v[0] / (65536.0),v[1] / (65536.0), v[2] / (65536.0))
 				obj.write('v '+str( (v[0]+px+mo[4]) / (65536.0))+' '+str( (v[1]+py+mo[5]) / (65536.0))+' '+str( (v[2]+pz+mo[6]) / (65536.0))+'\n')
 				vertices.append([v[0] / (65536.0),v[1] / (65536.0), v[2] / (65536.0)])
 			f.seek(mo[10])
@@ -315,7 +315,7 @@ for filename in os.listdir(os.getcwd()+defdir):
 			for i in range(0,np):
 				f.seek(mo[10]+32*i)
 				p=unpack('llllllll',f.read(4*8))
-				#print p
+				#print (p)
 				nvi=p[1]
 				f.seek(p[3])
 				if nvi==3:
@@ -325,7 +325,7 @@ for filename in os.listdir(os.getcwd()+defdir):
 				if not (nvi==3 or nvi==4):
 					continue
 				if p[4]==0:
-					print 'no texture on primitive ',p
+					print ('no texture on primitive ',p)
 					continue
 				if nvi==4 and firstplate==1: #remove selection plate from 3do
 					if vi[0]+vnum==1:
@@ -333,10 +333,10 @@ for filename in os.listdir(os.getcwd()+defdir):
 						vsum2= abs(vertices[vi[0]+2][0]) +abs(vertices[vi[0]+2][2] )			
 						vsum3= abs(vertices[vi[0]+3][0]) +abs(vertices[vi[0]+3][2] )				
 						vsum4= abs(vertices[vi[0]][0]) +abs(vertices[vi[0]][2]) 
-						print vsum4
+						print (vsum4)
 						if (abs(vsum1-vsum2)<0.01 and abs(vsum1-vsum3)<0.01 and abs(vsum1-vsum4)<0.01) :
 							firstplate=0
-							print 'Skipping first plate'
+							print ('Skipping first plate')
 							continue
 					
 				obj.write('f')
@@ -353,23 +353,23 @@ for filename in os.listdir(os.getcwd()+defdir):
 				recurseread3do(px,py,pz)	
 		filetype=''
 		if '.s3o' not in objectname:
-			print 'objtype 3do', objectname
+			print ('objtype 3do', objectname)
 			try:
 				f=open(objdir+objectname.partition('.')[0]+'.3do','rb')
 			except IOError:
-				print "FAILED TO OPEN 3d0 file ",objectname,'!\n'
+				print ("FAILED TO OPEN 3d0 file ",objectname,'!\n')
 				continue
 			obj=open(outfname,'w')	
 			filetype='3do'
-			print 'wtf'
+			print ('wtf')
 			recurseread3do(0,0,0)
 		else:
-			print 'objtype s3o'
+			print ('objtype s3o')
 			filetype='s3o'
 			obj=open(outfname,'w')		
 			reads3o(objdir+objectname)
 		
-		print 'working on: ',filename,'  vertices: ',vnum,' parts:',pnum
+		print ('working on: ',filename,'  vertices: ',vnum,' parts:',pnum)
 		obj.write('o groundplane\n')
 		#--------------------- create AO plate ------------------------
 		largeao=''
@@ -412,11 +412,11 @@ for filename in os.listdir(os.getcwd()+defdir):
 		xmlout=open(xmlfilename,'w')
 		for l in xmlln:
 			if 'S:\\models\\!AO\\corfus+plane2.obj' in l:
-				print 'found .obj in xml'
+				print ('found .obj in xml')
 				l=l.replace('S:\\models\\!AO\\corfus+plane2.obj',cwd+'\\'+outfname)
 			if 'S:\\models\\!AO\\corfusplaneuniform.bmp' in l:
 				l=l.replace('S:\\models\\!AO\\corfusplaneuniform.bmp',cwd+'\\'+outfname.partition('.')[0]+'_ao.bmp')
-				print 'found .bmp in xml'
+				print ('found .bmp in xml')
 			if 'Width=\"128\" Height=\"128\"' in l:
 				l=l.replace('Width=\"128\" Height=\"128\"','Width=\"'+str(pprez)+'\" Height=\"'+str(pprez)+'\"')
 			if 'Width=\"128\" Height=\"128\"' in l:
@@ -427,7 +427,7 @@ for filename in os.listdir(os.getcwd()+defdir):
 		if runxnormal==1:
 			os.system('del '+outfname.partition('.')[0]+'_ao_occlusion.bmp')
 			cmd=xnormalpath+'xnormal.exe\" '+xmlfilename
-			print cmd		
+			print (cmd)		
 			os.system(cmd)
 			
 		#--------------------- Adjust color balance of AO bake ------------------------------------------
@@ -461,14 +461,14 @@ for filename in os.listdir(os.getcwd()+defdir):
 		if runimagemagick==1:
 			if filetype =='s3o':
 				cmd='convert -flip '+outfname.partition('.')[0]+'_ao_normalized.bmp '+outfname.partition('.')[0]+'_ao_normalized.bmp'
-				print cmd
+				print (cmd)
 				os.system(cmd)
 			cmd='composite.exe -compose Multiply -negate '+outfname.partition('.')[0]+'_ao_normalized.bmp aomask'+str(pprez)+largeao+'.bmp aotemp.bmp'
-			print cmd
+			print (cmd)
 			os.system(cmd)
 
 			cmd='composite -compose CopyOpacity aotemp.bmp black'+str(pprez)+'.bmp '+outfname.partition('.')[0]+'_aoplane.tga'
-			print cmd		
+			print (cmd)		
 			os.system(cmd)
 			if preplate !='':
 				preplateimg=Image.open(texdir+preplate)
@@ -480,7 +480,7 @@ for filename in os.listdir(os.getcwd()+defdir):
 				w2,h2=aoplane.size				
 				aoplane.save(outfname.partition('.')[0]+'_aoplane_ao_only.png')
 				if w!=w2 or h!=h2:
-					print "i fucking knew this would happen, damned plate and ao sizes dont match!", h,w,h2,w2
+					print ("i fucking knew this would happen, damned plate and ao sizes dont match!", h,w,h2,w2)
 					continue
 				preplateimg.load()
 				aoplane.load()
@@ -502,15 +502,15 @@ for filename in os.listdir(os.getcwd()+defdir):
 								np[2]=platepix[2]*(255-aopix[3])/255
 							preplateimg.putpixel((x,y),(np[0],np[1],np[2]))
 						else:
-							print 'Wrong channel amount for plate or ao!', preplate, outfname
+							print ('Wrong channel amount for plate or ao!', preplate, outfname)
 						# if x*y%1024==0:
-							# print 'ao:',aopix, 'pl:',platepix, 'np',np
+							# print ('ao:',aopix, 'pl:',platepix, 'np',np)
 				alpha.save(outfname.partition('.')[0]+'_aoplane_merged_a.bmp')
 				preplateimg=preplateimg.convert('RGB')
 				preplateimg.save(outfname.partition('.')[0]+'_aoplane_merged.bmp')
 				preplateimg.save(outfname.partition('.')[0]+'_aoplane.png')
 				cmd='composite -compose CopyOpacity '+outfname.partition('.')[0]+'_aoplane_merged_a.bmp '+ outfname.partition('.')[0]+'_aoplane_merged.bmp '+ outfname.partition('.')[0]+'_aoplane.tga'
-			print cmd		
+			print (cmd)		
 			os.system(cmd)
 				#preplateimg.close()
 				#aoplane.close()
@@ -522,7 +522,7 @@ for filename in os.listdir(os.getcwd()+defdir):
 				cmd='nvdxt -dxt5 -quality_highest -file '+outfname.partition('.')[0]+'_aoplane.tga'
 			else:
 				cmd='nvdxt -dxt5 -quality_highest -file '+outfname.partition('.')[0]+'_aoplane.tga'
-			print cmd
+			print (cmd)
 			os.system(cmd)
 
 		#--------------------- edit FBI file to contain ground decal info------------------------
@@ -547,7 +547,7 @@ for filename in os.listdir(os.getcwd()+defdir):
 					else:
 						decalinfo='	buildingGroundDecalDecaySpeed=30,\n	buildingGroundDecalSizeX='+str(sizex/8)+ ',\n	buildingGroundDecalSizeY='+str(sizez/8)+',\n	useBuildingGroundDecal = true,\n	buildingGroundDecalType=[['+outfname.partition('.')[0]+'_aoplane.dds]],\n}\n'
 					
-					print  decalinfo
+					print  (decalinfo)
 					fbi.write(decalinfo)
 					alreadyhasgroundplate=1
 				else:
