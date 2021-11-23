@@ -310,6 +310,15 @@ function comma_value(amount, displayPlusMinus)
   	return formatted
 end
 
+function toPercent(amount)
+	-- amount is a string when ToSI is used before calling this function
+	if type(amount) == "string" then
+		amount = tonumber(amount)
+	end
+	
+	return string.format("%.0f", amount * 100) .. "%"
+end
+
 local function writeTemplateLine(key, value, indents, dataType)
 	if not key or not value then
 		return ""
@@ -357,9 +366,12 @@ end
 function getDescription(unitDef, forcelang)
 	local lang_to_use = forcelang or lang
 	local str
-
+	
+	-- don't use JSON descriptions, they're out of date in that they don't include the energy output figures of energy structures
+	-- but the unitdef descs are also out of date! TODO look at this again after they've been unified
 	if lang_to_use == 'en' and enLang[unitDef.unitname] and enLang[unitDef.unitname].description then
-		str = enLang[unitDef.unitname].description 
+		--str = enLang[unitDef.unitname].description 
+		str = unitDef.customparams and unitDef.customparams['description_' .. lang_to_use] or unitDef.description or ''
 	elseif nonLatinTrans[lang_to_use] then
 		local unitTrans = nonLatinTrans[lang_to_use].units[unitDef.unitname]
 		str = unitTrans and unitTrans.description or ''
@@ -956,7 +968,7 @@ function printUnitStatsTemplate(unitDef)
 	str = str .. writeTemplateLine("image", buildPic(unitDef.buildpic or unitDef.unitname .. '.png'))
 	str = str .. writeTemplateLine("icontype", unitDef.icontype)
 	str = str .. writeTemplateLine("cost", getCost(unitDef))
-	str = str .. writeTemplateLine("hitpoints", unitDef.maxdamage)
+	str = str .. writeTemplateLine("hitpoints", comma_value(unitDef.maxdamage))
 	
 	if not isBuilding then
 		-- screw mass
@@ -984,8 +996,13 @@ function printUnitStatsTemplate(unitDef)
 	if unitDef.sonardistance then
 		str = str .. writeTemplateLine("sonar", unitDef.sonardistance)
 	end
+	if (unitDef.cruisealt) then
+		str = str .. writeTemplateLine("altitude", unitDef.cruisealt)
+	end
 	if not (unitDef.canfly or unitDef.cantbetransported or isBuilding) then
-		str = str .. writeTemplateLine("transportable", ((((unitDef.mass > 350) or ((unitDef.xsize or 0) > 4) or ((unitDef.zsize or 0) > 4)) and "Heavy") or "Light"))
+		local heavy = cp.requireheavytrans
+		local medium = cp.requiremediumtrans
+		str = str .. writeTemplateLine("transportable", ((heavy and "Heavy") or (medium and "Medium") or "Light"))
 	end
 	if cp.pylonrange then
 		str = str .. writeTemplateLine("gridlink", cp.pylonrange)
@@ -1024,6 +1041,24 @@ function printUnitStatsTemplate(unitDef)
 			.. writeTemplateLine("buildpower", unitDef.workertime, 1)
 			.. writeClosingLine()
 	end
+	
+	-- transport
+	if (unitDef.transportcapacity or 0) > 0 then
+		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability transport")
+		local light = cp.transport_speed_light
+		local medium = cp.transport_speed_medium
+		local heavy = cp.transport_speed_heavy
+		if light then
+			abilities = abilities .. writeTemplateLine("light", toPercent(light), 1)
+		end
+		if medium then
+			abilities = abilities .. writeTemplateLine("medium", toPercent(medium), 1)
+		end
+		if heavy then
+			abilities = abilities .. writeTemplateLine("heavy", toPercent(heavy), 1)
+		end
+		abilities = abilities .. writeClosingLine()
+	end
 	-- cloak
 	if unitDef.cloakcost or cp.idle_cloak then
 		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability cloak")
@@ -1040,6 +1075,14 @@ function printUnitStatsTemplate(unitDef)
 		end
 		abilities = abilities .. writeClosingLine()
 	end
+	-- area cloak
+	if unitDef.customparams.area_cloak_upkeep then
+		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability cloak")
+		abilities = abilities .. writeTemplateLine("name", "Area Cloak", 1)	
+		abilities = abilities .. writeTemplateLine("radius", unitDef.customparams.area_cloak_radius, 1)
+		abilities = abilities .. writeTemplateLine("upkeep", unitDef.customparams.area_cloak_upkeep, 1)
+		abilities = abilities .. writeClosingLine()
+	end
 	-- shield
 	local shields = printShields(unitDef)
 	if shield ~= '' then
@@ -1047,16 +1090,16 @@ function printUnitStatsTemplate(unitDef)
 	end
 	
 	-- radar/jammer
-	if unitDef.radardistance or unitDef.radardistancejam or unitDef.customparams.area_cloak_upkeep then
+	if unitDef.radardistance or unitDef.radardistancejam then
 		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability intel")
-		if unitDef.radardistance then
-			abilities = abilities .. writeTemplateLine("radar", unitDef.radardistance, 1)	
-		end
 		if unitDef.radardistancejam then
+			if not unitDef.radardistance then
+				abilities = abilities .. writeTemplateLine("name", "Radar Jammer", 1)
+			end
 			abilities = abilities .. writeTemplateLine("jam", unitDef.radardistancejam, 1)	
 		end
-		if unitDef.customparams.area_cloak_upkeep then
-			abilities = abilities .. writeTemplateLine("energycost", unitDef.customparams.area_cloak_upkeep, 1)	
+		if unitDef.radardistance then
+			abilities = abilities .. writeTemplateLine("radar", unitDef.radardistance, 1)	
 		end
 		abilities = abilities .. writeClosingLine()
 	end
@@ -1065,7 +1108,7 @@ function printUnitStatsTemplate(unitDef)
 		abilities = abilities .. "\n\t" .. writeHeaderLine("Infobox zkability jump")
 			.. writeTemplateLine("range", cp.jump_range, 1)
 			.. writeTemplateLine("reload", cp.jump_reload, 1)
-			.. writeTemplateLine("speed", cp.jump_speed, 1)
+			.. writeTemplateLine("speed", comma_value(cp.jump_speed * 30, false), 1)
 			.. writeTemplateLine("midairjump", tobool(cp.jump_from_midair) and "Yes" or "No", 1)
 		abilities = abilities .. writeClosingLine()
 	end

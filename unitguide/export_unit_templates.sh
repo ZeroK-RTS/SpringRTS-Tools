@@ -16,8 +16,8 @@ cp "/media/histidine/NTFS Main/Games/Spring/games/zk.sdd/gamedata/buildoptions.l
 
 lua5.3 "./export_unit_templates.lua" "$UNITS" $MARKUP en
 #recode ISO-8859-1..UTF-8 $MARKUP
-rm -rf "$OUTPUT"
-mkdir -p "$OUTPUT"
+rm -rf "$OUTPUT/markup"
+mkdir -p "$OUTPUT/markup"
 cp -r $MARKUP "$OUTPUT"
 
 rm -rf $TMPDIR

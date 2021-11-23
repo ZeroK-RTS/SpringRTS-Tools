@@ -17,8 +17,8 @@ cp "D:/Games/Spring/games/zk.sdd/gamedata/buildoptions.lua" "$EXTRADEFS/buildopt
 # Point this to a copy of the lua binary
 /g/Programming/lua/lua53.exe "./export_unit_templates.lua" "$UNITS" $MARKUP en
 #recode ISO-8859-1..UTF-8 $MARKUP
-rm -rf "$OUTPUT"
-mkdir -p "$OUTPUT"
+rm -rf "$OUTPUT/markup"
+mkdir -p "$OUTPUT/markup"
 cp -r $MARKUP "$OUTPUT"
 
 rm -rf $TMPDIR
